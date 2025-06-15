@@ -35,80 +35,144 @@ export const mockDashboardData = {
       description: 'Pagamento aluguel',
       amount: -3500,
       type: 'expense' as const,
-      date: '28 Janeiro 2025',
-      category: 'Moradia'
+      date: '28 janeiro 2025',
+      category: 'Aluguel'
     },
     {
       id: '2', 
       description: 'Pedro Henrique',
       amount: 2500,
       type: 'income' as const,
-      date: '25 Janeiro 2025',
-      category: 'Transferência'
+      date: '25 janeiro 2025',
+      category: 'Empréstimo'
     },
     {
       id: '3',
       description: 'João Vitor',
       amount: 5400,
       type: 'income' as const,
-      date: '25 Janeiro 2025',
-      category: 'Freelance'
+      date: '25 janeiro 2025',
+      category: 'Empréstimo'
     },
     {
       id: '4',
-      description: 'Supermercado Extra',
-      amount: -245.80,
+      description: 'Assinatura Spotify',
+      amount: -20.90,
       type: 'expense' as const,
-      date: '24 Janeiro 2025',
-      category: 'Mercado'
+      date: '20 janeiro 2025',
+      category: 'Outros'
     },
     {
       id: '5',
-      description: 'Salário',
-      amount: 4500,
-      type: 'income' as const,
-      date: '23 Janeiro 2025',
-      category: 'Trabalho'
+      description: 'Compra mercado',
+      amount: -875.63,
+      type: 'expense' as const,
+      date: '19 janeiro 2025',
+      category: 'Mercado'
     },
     {
       id: '6',
-      description: 'Uber',
-      amount: -25.50,
-      type: 'expense' as const,
-      date: '22 Janeiro 2025',
-      category: 'Transporte'
+      description: 'Salário Janeiro',
+      amount: 4500,
+      type: 'income' as const,
+      date: '18 janeiro 2025',
+      category: 'Salário'
     },
     {
       id: '7',
-      description: 'Cinema',
-      amount: -45.00,
+      description: 'Conta de Luz',
+      amount: -180.45,
       type: 'expense' as const,
-      date: '21 Janeiro 2025',
-      category: 'Lazer'
+      date: '17 janeiro 2025',
+      category: 'Moradia'
     },
     {
       id: '8',
       description: 'Freelance Design',
       amount: 1200,
       type: 'income' as const,
-      date: '20 Janeiro 2025',
+      date: '16 janeiro 2025',
       category: 'Freelance'
     },
     {
       id: '9',
-      description: 'Farmácia',
-      amount: -89.90,
+      description: 'Gasolina',
+      amount: -95.80,
       type: 'expense' as const,
-      date: '19 Janeiro 2025',
-      category: 'Saúde'
+      date: '15 janeiro 2025',
+      category: 'Transporte'
     },
     {
       id: '10',
       description: 'Transferência Recebida',
       amount: 500,
       type: 'income' as const,
-      date: '18 Janeiro 2025',
+      date: '14 janeiro 2025',
       category: 'Transferência'
+    },
+    {
+      id: '11',
+      description: 'Farmácia São João',
+      amount: -89.90,
+      type: 'expense' as const,
+      date: '13 janeiro 2025',
+      category: 'Saúde'
+    },
+    {
+      id: '12',
+      description: 'Cinema Shopping',
+      amount: -45.00,
+      type: 'expense' as const,
+      date: '12 janeiro 2025',
+      category: 'Lazer'
+    },
+    {
+      id: '13',
+      description: 'Uber',
+      amount: -25.50,
+      type: 'expense' as const,
+      date: '11 janeiro 2025',
+      category: 'Transporte'
+    },
+    {
+      id: '14',
+      description: 'Curso Online',
+      amount: -199.90,
+      type: 'expense' as const,
+      date: '10 janeiro 2025',
+      category: 'Educação'
+    },
+    {
+      id: '15',
+      description: 'Venda de Item',
+      amount: 300,
+      type: 'income' as const,
+      date: '09 janeiro 2025',
+      category: 'Outros'
+    },
+    {
+      id: '16',
+      description: 'Restaurante',
+      amount: -89.50,
+      type: 'expense' as const,
+      date: '08 janeiro 2025',
+      category: 'Lazer'
+    },
+    {
+      id: '17',
+      description: 'Internet',
+      amount: -79.90,
+      type: 'expense' as const,
+      date: '07 janeiro 2025',
+      category: 'Moradia'
+    },
+    {
+      id: '18',
+      description: 'Consultório Médico',
+      amount: -150.00,
+      type: 'expense' as const,
+      date: '06 janeiro 2025',
+      category: 'Saúde'
     }
   ] as Transaction[],
 
