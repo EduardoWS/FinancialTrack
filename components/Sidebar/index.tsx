@@ -8,7 +8,7 @@ import SidebarLink from './SidebarLink'; // Importe o novo componente
 const sidebarLinks = [
   { name: 'Dashboard', href: '/dashboard', icon: 'home' },
   { name: 'Transações', href: '/transacoes', icon: 'exchange' },
-  { name: 'Categorias', href: '/tagsCategorias', icon: 'tags' },
+  { name: 'Categorias', href: '/categorias', icon: 'tags' },
   { name: 'Metas', href: '/metas', icon: 'bullseye' },
   { name: 'Relatórios', href: '/relatorios', icon: 'bar-chart' },
 ];
