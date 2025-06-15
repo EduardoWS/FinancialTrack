@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text } from 'react-native';
 import { usePathname } from 'expo-router'; // Importe o usePathname
+import React from 'react';
+import { Text, View } from 'react-native';
+import { useTheme } from '../../services/ThemeContext';
 import SidebarLink from './SidebarLink'; // Importe o novo componente
 
 // Definindo os links em um array para ficar mais organizado
@@ -14,9 +15,15 @@ const sidebarLinks = [
 
 const Sidebar = () => {
   const pathname = usePathname(); // Hook que nos dá a URL exata
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
-    <View className="w-64 bg-white h-full p-5 border-r border-gray-200">
+    <View className={`w-64 h-full p-5 border-r ${
+      isDark 
+        ? 'bg-gray-800 border-gray-700' 
+        : 'bg-white border-gray-200'
+    }`}>
       <Text className="text-2xl font-bold text-blue-600 mb-10">Financial Track</Text>
       
       {sidebarLinks.map((link) => (

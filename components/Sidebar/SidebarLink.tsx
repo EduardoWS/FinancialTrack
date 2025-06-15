@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { Link } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { Link } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { useTheme } from '../../services/ThemeContext';
 
 // Tipagem para as propriedades que o nosso link vai receber
 type SidebarLinkProps = {
@@ -16,24 +17,26 @@ type SidebarLinkProps = {
 const SidebarLink = ({ link, isActive }: SidebarLinkProps) => {
   // Estado para controlar se o mouse está sobre o componente
   const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Determina a cor de fundo com base nos estados
   const getBackgroundColor = () => {
-    if (isActive) return 'bg-blue-100';
-    if (isHovered) return 'bg-gray-100'; // Cor do hover!
+    if (isActive) return isDark ? 'bg-blue-900/30' : 'bg-blue-500/10';
+    if (isHovered) return isDark ? 'bg-gray-700' : 'bg-gray-100';
     return 'bg-transparent';
   };
   
   // Determina a cor do texto com base nos estados
   const getTextColor = () => {
     if (isActive) return 'text-blue-600 font-bold';
-    return 'text-gray-600';
+    return isDark ? 'text-gray-300' : 'text-gray-600';
   };
 
   // Determina a cor do ícone com base nos estados
   const getIconColor = () => {
     if (isActive) return '#2563EB';
-    return '#4B5563';
+    return isDark ? '#D1D5DB' : '#4B5563';
   };
 
   return (
