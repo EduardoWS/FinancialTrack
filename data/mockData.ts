@@ -114,7 +114,7 @@ export const mockDashboardData = {
 
   // Últimas 3 transações para exibição rápida
   get recentTransactions() {
-    return this.allTransactions.slice(0, 3);
+    return this.allTransactions.slice(0, 4);
   },
 
   // Atividade semanal

@@ -39,10 +39,8 @@ const BalanceHistoryChart: React.FC<BalanceHistoryChartProps> = ({ data }) => {
     };
   }).filter(item => item.value !== undefined);
 
-  const yAxisLabelTexts = chartData.map(d => formatCurrency(d.value as number));
-
   return (
-    <Card className="p-4">
+    <Card className="p-4 h-full">
       <Text className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
         Histórico de Saldo
       </Text>
@@ -58,7 +56,8 @@ const BalanceHistoryChart: React.FC<BalanceHistoryChartProps> = ({ data }) => {
           dataPointsColor={isDark ? "#3B82F6" : "#60A5FA"}
           dataPointsRadius={5}
           spacing={60}
-          yAxisLabelTexts={yAxisLabelTexts}
+          rulesColor={isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)"}
+          noOfSections={5}
           yAxisTextStyle={{ color: isDark ? '#A0AEC0' : '#718096' }}
           xAxisLabelTextStyle={{ color: isDark ? '#A0AEC0' : '#718096' }}
           pointerConfig={{

@@ -14,13 +14,32 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const barData = data.map(item => ({
-    stacks: [
-      { value: item.income, color: '#14B8A6' }, // Teal-500
-      { value: item.expense, color: '#EF4444' }, // Red-500
-    ],
-    label: item.day,
-  }));
+  const barData: {
+    value: number,
+    label?: string,
+    frontColor: string,
+    income: number,
+    expense: number,
+    day: string
+  }[] = [];
+
+  data.forEach(item => {
+    barData.push({
+      value: item.income,
+      label: item.day,
+      frontColor: '#14B8A6', // Teal-500
+      income: item.income,
+      expense: item.expense,
+      day: item.day,
+    });
+    barData.push({
+      value: item.expense,
+      frontColor: '#EF4444', // Red-500
+      income: item.income,
+      expense: item.expense,
+      day: item.day,
+    });
+  });
 
   return (
     <Card className="p-4">
@@ -43,10 +62,11 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
       </View>
       <View>
         <BarChart
-          stackData={barData}
+          data={barData}
+          isAnimated
           height={250}
-          barWidth={40}
-          spacing={40}
+          barWidth={18}
+          rulesColor={isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)"}
           yAxisTextStyle={{ color: isDark ? '#A0AEC0' : '#718096' }}
           xAxisLabelTextStyle={{ color: isDark ? '#A0AEC0' : '#718096', textAlign: 'center' }}
           renderTooltip={(item: any) => {
@@ -58,9 +78,9 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
                 borderWidth: 1,
                 borderColor: isDark ? '#A0AEC0' : '#718096',
               }}>
-                <Text style={{ color: isDark ? 'white' : 'black', fontWeight: 'bold' }}>{item.label}</Text>
-                <Text style={{ color: '#14B8A6' }}>Entrada: {formatCurrency(item.stacks[0].value)}</Text>
-                <Text style={{ color: '#EF4444' }}>Saída: {formatCurrency(item.stacks[1].value)}</Text>
+                <Text style={{ color: isDark ? 'white' : 'black', fontWeight: 'bold' }}>{item.day}</Text>
+                <Text style={{ color: '#14B8A6' }}>Entrada: {formatCurrency(item.income)}</Text>
+                <Text style={{ color: '#EF4444' }}>Saída: {formatCurrency(item.expense)}</Text>
               </View>
             )
           }}

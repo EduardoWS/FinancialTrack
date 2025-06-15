@@ -121,34 +121,42 @@ const DashboardScreen = () => {
           </View>
 
           {/* Layout responsivo para desktop e mobile */}
-          <View className="web:flex-row web:gap-4 space-y-4 web:space-y-0">
-            {/* Coluna Esquerda */}
-            <View className="flex-1 space-y-4">
+          <View className="space-y-4">
+            {/* Primeira Linha */}
+            <View className="flex-col md:flex-row md:space-x-4 md:space-y-0 space-y-4">
               {/* Atividade Semanal */}
-              {data?.weeklyActivity && (
-                <WeeklyActivityChart data={data.weeklyActivity} />
-              )}
+              <View className="flex-1">
+                {data?.weeklyActivity && (
+                  <WeeklyActivityChart data={data.weeklyActivity} />
+                )}
+              </View>
 
-              {/* Histórico de Saldo */}
-              {data?.balanceHistory && (
-                <BalanceHistoryChart data={data.balanceHistory} />
-              )}
+              {/* Últimas Transações */}
+              <View className="flex-1">
+                {data?.recentTransactions && data?.allTransactions && (
+                  <RecentTransactions 
+                    transactions={data.recentTransactions} 
+                    allTransactions={data.allTransactions}
+                  />
+                )}
+              </View>
             </View>
 
-            {/* Coluna Direita */}
-            <View className="flex-1 space-y-4">
-              {/* Últimas Transações */}
-              {data?.recentTransactions && data?.allTransactions && (
-                <RecentTransactions 
-                  transactions={data.recentTransactions} 
-                  allTransactions={data.allTransactions}
-                />
-              )}
+            {/* Segunda Linha */}
+            <View className="flex-col md:flex-row md:space-x-4 md:space-y-0 space-y-4">
+              {/* Histórico de Saldo */}
+              <View className="flex-1">
+                {data?.balanceHistory && (
+                  <BalanceHistoryChart data={data.balanceHistory} />
+                )}
+              </View>
 
               {/* Gastos por Categoria */}
-              {data?.categoryExpenses && (
-                <CategoryExpensesChart data={data.categoryExpenses} />
-              )}
+              <View className="flex-1">
+                {data?.categoryExpenses && (
+                  <CategoryExpensesChart data={data.categoryExpenses} />
+                )}
+              </View>
             </View>
           </View>
 
