@@ -29,7 +29,7 @@ const CategoryExpensesChart: React.FC<CategoryExpensesChartProps> = ({ data }) =
   return (
     <Card className="min-h-[400px]">
       <Text className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-        Gastos por Tag/Categoria
+        Gastos por Categorias
       </Text>
       
       <View className="items-center">

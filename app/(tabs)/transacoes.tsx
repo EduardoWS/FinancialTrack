@@ -203,7 +203,7 @@ const TransacoesScreen = () => {
             <Text className={`text-sm font-medium w-24 text-center ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>
-              Tag/Categoria
+              Categoria
             </Text>
             <Text className={`text-sm font-medium w-24 text-center ${
               isDark ? 'text-gray-400' : 'text-gray-600'
@@ -260,7 +260,7 @@ const TransacoesScreen = () => {
                     </Text>
                   </View>
 
-                  {/* Tag/Categoria */}
+                  {/* Categoria */}
                   <View className="w-24 items-center">
                     <View className={`
                       px-2 py-1 rounded-full
