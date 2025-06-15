@@ -127,176 +127,200 @@ const CategoriasScreen = () => {
     setEditingCategory(null);
     setFormData({
       name: '',
-      type: 'expense',
+      type: activeTab, // Usar o tab ativo por padrão
       color: '#3b82f6',
       icon: '📌'
     });
   };
 
-  const openAddModal = (type: 'income' | 'expense') => {
-    setFormData({ ...formData, type });
+  const openAddModal = () => {
+    setFormData({ 
+      name: '',
+      type: activeTab,
+      color: activeTab === 'income' ? '#10b981' : '#ef4444',
+      icon: '📌'
+    });
     setModalVisible(true);
   };
 
   const filteredCategories = categories.filter(cat => cat.type === activeTab);
+  const incomeCategories = categories.filter(cat => cat.type === 'income');
+  const expenseCategories = categories.filter(cat => cat.type === 'expense');
+
+  const FilterButton = ({ 
+    filter, 
+    label, 
+    count,
+    color = 'red'
+  }: { 
+    filter: 'income' | 'expense'; 
+    label: string; 
+    count: number;
+    color?: 'red' | 'green';
+  }) => {
+    const isActive = activeTab === filter;
+    
+    return (
+      <TouchableOpacity
+        onPress={() => setActiveTab(filter)}
+        className={`
+          px-4 py-2 rounded-full border-2 min-w-[100px] items-center mr-3
+          ${isActive 
+            ? (color === 'green' 
+              ? (isDark ? 'bg-green-600 border-green-600' : 'bg-green-600 border-green-600')
+              : (isDark ? 'bg-red-600 border-red-600' : 'bg-red-600 border-red-600')
+            )
+            : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
+          }
+        `}
+      >
+        <Text className={`
+          font-medium text-sm
+          ${isActive 
+            ? 'text-white' 
+            : (isDark ? 'text-gray-300' : 'text-gray-700')
+          }
+        `}>
+          {label}
+        </Text>
+        <Text className={`
+          text-xs mt-1
+          ${isActive 
+            ? (color === 'green' ? 'text-green-100' : 'text-red-100')
+            : (isDark ? 'text-gray-400' : 'text-gray-500')
+          }
+        `}>
+          {count}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView style={{ 
-      flex: 1, 
-      backgroundColor: isDark ? '#111827' : '#f9fafb' 
-    }}>
+    <SafeAreaView className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <Header title="Categorias" />
       
-      <View style={{ flex: 1, padding: 16 }}>
-        {/* Tabs */}
-        <View style={{
-          flexDirection: 'row',
-          backgroundColor: isDark ? '#374151' : '#ffffff',
-          borderRadius: 12,
-          padding: 4,
-          marginBottom: 20
-        }}>
-          <TouchableOpacity
-            onPress={() => setActiveTab('expense')}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              borderRadius: 8,
-              backgroundColor: activeTab === 'expense' 
-                ? (isDark ? '#ef4444' : '#ef4444') 
-                : 'transparent'
-            }}
+      <View className="flex-1 p-4">
+        {/* Filtros e Botão Adicionar Categoria */}
+        <View className="flex-row justify-between items-center mb-6">
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            className="flex-1"
           >
-            <Text style={{
-              textAlign: 'center',
-              fontWeight: '600',
-              color: activeTab === 'expense' 
-                ? '#ffffff' 
-                : (isDark ? '#d1d5db' : '#6b7280')
-            }}>
-              Despesas ({categories.filter(c => c.type === 'expense').length})
-            </Text>
-          </TouchableOpacity>
+            <FilterButton 
+              filter="expense" 
+              label="Despesas" 
+              count={expenseCategories.length}
+              color="red"
+            />
+            <FilterButton 
+              filter="income" 
+              label="Receitas" 
+              count={incomeCategories.length}
+              color="green"
+            />
+          </ScrollView>
           
           <TouchableOpacity
-            onPress={() => setActiveTab('income')}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              borderRadius: 8,
-              backgroundColor: activeTab === 'income' 
-                ? (isDark ? '#10b981' : '#10b981') 
-                : 'transparent'
-            }}
+            onPress={openAddModal}
+            className={`px-4 py-2 rounded-lg ml-3 ${
+              activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
+            }`}
           >
-            <Text style={{
-              textAlign: 'center',
-              fontWeight: '600',
-              color: activeTab === 'income' 
-                ? '#ffffff' 
-                : (isDark ? '#d1d5db' : '#6b7280')
-            }}>
-              Receitas ({categories.filter(c => c.type === 'income').length})
+            <Text className="text-white font-medium text-sm">
+              + Categoria
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Lista de Categorias */}
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={{ marginBottom: 20 }}>
-            {filteredCategories.map(category => (
-              <View key={category.id} style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: isDark ? '#374151' : '#ffffff',
-                padding: 16,
-                borderRadius: 12,
-                marginBottom: 12,
-                elevation: 2,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4
-              }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  <View style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: category.color,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginRight: 12
-                  }}>
-                    <Text style={{ fontSize: 20 }}>{category.icon}</Text>
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          {filteredCategories.length === 0 ? (
+            <View className={`p-6 rounded-xl ${
+              isDark ? 'bg-gray-800' : 'bg-white'
+            } shadow-sm items-center`}>
+              <Text className="text-6xl mb-4">
+                {activeTab === 'income' ? '💰' : '💳'}
+              </Text>
+              <Text className={`text-lg font-semibold mb-2 ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                Nenhuma categoria encontrada
+              </Text>
+              <Text className={`text-center ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Adicione sua primeira categoria de {activeTab === 'income' ? 'receita' : 'despesa'} para começar a organizar suas transações!
+              </Text>
+              <TouchableOpacity
+                onPress={openAddModal}
+                className={`px-6 py-3 rounded-lg mt-4 ${
+                  activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
+                }`}
+              >
+                <Text className="text-white font-medium">
+                  Criar Primeira Categoria
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            filteredCategories.map(category => (
+              <View 
+                key={category.id} 
+                className={`
+                  flex-row items-center justify-between p-4 rounded-xl mb-3 shadow-sm
+                  ${isDark ? 'bg-gray-800' : 'bg-white'}
+                `}
+              >
+                <View className="flex-row items-center flex-1">
+                  <View 
+                    className="w-10 h-10 rounded-full justify-center items-center mr-3"
+                    style={{ backgroundColor: category.color }}
+                  >
+                    <Text className="text-lg">{category.icon}</Text>
                   </View>
                   
-                  <View style={{ flex: 1 }}>
-                    <Text style={{
-                      fontSize: 16,
-                      fontWeight: '600',
-                      color: isDark ? '#ffffff' : '#111827'
-                    }}>
+                  <View className="flex-1">
+                    <Text className={`text-base font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
                       {category.name}
                     </Text>
-                    <Text style={{
-                      fontSize: 12,
-                      color: isDark ? '#9ca3af' : '#6b7280'
-                    }}>
+                    <Text className={`text-xs ${
+                      isDark ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
                       {category.type === 'income' ? 'Receita' : 'Despesa'}
                     </Text>
                   </View>
                 </View>
 
-                <View style={{ flexDirection: 'row' }}>
+                <View className="flex-row">
                   <TouchableOpacity
                     onPress={() => handleEditCategory(category)}
-                    style={{
-                      padding: 8,
-                      marginRight: 8,
-                      borderRadius: 8,
-                      backgroundColor: isDark ? '#4b5563' : '#f3f4f6'
-                    }}
+                    className={`p-2 mr-2 rounded-lg ${
+                      isDark ? 'bg-gray-700' : 'bg-gray-100'
+                    }`}
                   >
-                    <Text style={{ color: isDark ? '#60a5fa' : '#3b82f6' }}>✏️</Text>
+                    <Text className={isDark ? 'text-blue-400' : 'text-blue-600'}>✏️</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
                     onPress={() => handleDeleteCategory(category)}
-                    style={{
-                      padding: 8,
-                      borderRadius: 8,
-                      backgroundColor: isDark ? '#4b5563' : '#f3f4f6'
-                    }}
+                    className={`p-2 rounded-lg ${
+                      isDark ? 'bg-gray-700' : 'bg-gray-100'
+                    }`}
                   >
-                    <Text style={{ color: '#ef4444' }}>🗑️</Text>
+                    <Text className="text-red-600">🗑️</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
-          </View>
+            ))
+          )}
+          
+          {/* Espaçamento final */}
+          <View className="h-4" />
         </ScrollView>
-
-        {/* Botão Adicionar */}
-        <TouchableOpacity
-          onPress={() => openAddModal(activeTab)}
-          style={{
-            backgroundColor: activeTab === 'income' ? '#10b981' : '#ef4444',
-            padding: 16,
-            borderRadius: 12,
-            alignItems: 'center',
-            marginTop: 16
-          }}
-        >
-          <Text style={{
-            color: '#ffffff',
-            fontSize: 16,
-            fontWeight: '600'
-          }}>
-            + Adicionar {activeTab === 'income' ? 'Categoria de Receita' : 'Categoria de Despesa'}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Modal de Adicionar/Editar */}
@@ -306,209 +330,182 @@ const CategoriasScreen = () => {
         animationType="fade"
         onRequestClose={closeModal}
       >
-        <View style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 20
-        }}>
-          <View style={{
-            backgroundColor: isDark ? '#374151' : '#ffffff',
-            borderRadius: 16,
-            padding: 24,
-            width: '100%',
-            maxWidth: 400
-          }}>
-            <Text style={{
-              fontSize: 20,
-              fontWeight: '700',
-              color: isDark ? '#ffffff' : '#111827',
-              marginBottom: 20,
-              textAlign: 'center'
-            }}>
-              {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
-            </Text>
-
-            {/* Nome */}
-            <Text style={{
-              fontSize: 14,
-              fontWeight: '600',
-              color: isDark ? '#d1d5db' : '#374151',
-              marginBottom: 8
-            }}>
-              Nome da Categoria
-            </Text>
-            <TextInput
-              value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
-              placeholder="Ex: Mercado, Transporte..."
-              placeholderTextColor={isDark ? '#9ca3af' : '#6b7280'}
-              style={{
-                backgroundColor: isDark ? '#4b5563' : '#f9fafb',
-                borderWidth: 1,
-                borderColor: isDark ? '#6b7280' : '#d1d5db',
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 16,
-                color: isDark ? '#ffffff' : '#111827',
-                marginBottom: 16
-              }}
-            />
-
-            {/* Tipo */}
-            <Text style={{
-              fontSize: 14,
-              fontWeight: '600',
-              color: isDark ? '#d1d5db' : '#374151',
-              marginBottom: 8
-            }}>
-              Tipo
-            </Text>
-            <View style={{
-              flexDirection: 'row',
-              marginBottom: 16
-            }}>
+        <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-4">
+          <View className={`
+            rounded-2xl shadow-2xl w-full max-w-md
+            ${isDark ? 'bg-gray-800' : 'bg-white'}
+          `}>
+            {/* Header */}
+            <View className={`
+              flex-row items-center justify-between p-6 border-b
+              ${isDark ? 'border-gray-700' : 'border-gray-200'}
+            `}>
+              <Text className={`text-xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+              </Text>
               <TouchableOpacity
-                onPress={() => setFormData({ ...formData, type: 'income' })}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 8,
-                  marginRight: 8,
-                  backgroundColor: formData.type === 'income' ? '#10b981' : (isDark ? '#4b5563' : '#f3f4f6'),
-                  alignItems: 'center'
-                }}
+                onPress={closeModal}
+                className={`
+                  w-8 h-8 rounded-full items-center justify-center
+                  ${isDark ? 'bg-gray-700' : 'bg-gray-100'}
+                `}
               >
-                <Text style={{
-                  color: formData.type === 'income' ? '#ffffff' : (isDark ? '#d1d5db' : '#374151'),
-                  fontWeight: '600'
-                }}>
-                  Receita
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                onPress={() => setFormData({ ...formData, type: 'expense' })}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: formData.type === 'expense' ? '#ef4444' : (isDark ? '#4b5563' : '#f3f4f6'),
-                  alignItems: 'center'
-                }}
-              >
-                <Text style={{
-                  color: formData.type === 'expense' ? '#ffffff' : (isDark ? '#d1d5db' : '#374151'),
-                  fontWeight: '600'
-                }}>
-                  Despesa
+                <Text className={`text-lg font-bold ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  ×
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Cor */}
-            <Text style={{
-              fontSize: 14,
-              fontWeight: '600',
-              color: isDark ? '#d1d5db' : '#374151',
-              marginBottom: 8
-            }}>
-              Cor
-            </Text>
-            <View style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              marginBottom: 16
-            }}>
-              {availableColors.map(color => (
-                <TouchableOpacity
-                  key={color}
-                  onPress={() => setFormData({ ...formData, color })}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: color,
-                    margin: 4,
-                    borderWidth: formData.color === color ? 3 : 0,
-                    borderColor: isDark ? '#ffffff' : '#000000'
-                  }}
+            {/* Conteúdo */}
+            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false}>
+              {/* Nome */}
+              <View className="mb-4">
+                <Text className={`text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Nome da Categoria
+                </Text>
+                <TextInput
+                  value={formData.name}
+                  onChangeText={(text) => setFormData({ ...formData, name: text })}
+                  placeholder="Ex: Mercado, Transporte..."
+                  placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                  className={`border rounded-lg p-3 ${
+                    isDark 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
                 />
-              ))}
-            </View>
+              </View>
 
-            {/* Ícone */}
-            <Text style={{
-              fontSize: 14,
-              fontWeight: '600',
-              color: isDark ? '#d1d5db' : '#374151',
-              marginBottom: 8
-            }}>
-              Ícone
-            </Text>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 24 }}
-            >
-              <View style={{ flexDirection: 'row' }}>
-                {availableIcons.map(icon => (
+              {/* Tipo */}
+              <View className="mb-4">
+                <Text className={`text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Tipo de Categoria
+                </Text>
+                <View className="flex-row space-x-3">
                   <TouchableOpacity
-                    key={icon}
-                    onPress={() => setFormData({ ...formData, icon })}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: formData.icon === icon ? formData.color : (isDark ? '#4b5563' : '#f3f4f6'),
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      marginRight: 8
-                    }}
+                    onPress={() => setFormData({ ...formData, type: 'expense' })}
+                    className={`
+                      flex-1 p-3 rounded-lg border-2 items-center
+                      ${formData.type === 'expense' 
+                        ? 'bg-red-100 border-red-500' 
+                        : (isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300')
+                      }
+                    `}
                   >
-                    <Text style={{ fontSize: 20 }}>{icon}</Text>
+                    <Text className="text-2xl mb-1">💳</Text>
+                    <Text className={`font-medium ${
+                      formData.type === 'expense' ? 'text-red-700' : (isDark ? 'text-gray-300' : 'text-gray-700')
+                    }`}>
+                      Despesa
+                    </Text>
                   </TouchableOpacity>
-                ))}
+                  
+                  <TouchableOpacity
+                    onPress={() => setFormData({ ...formData, type: 'income' })}
+                    className={`
+                      flex-1 p-3 rounded-lg border-2 items-center
+                      ${formData.type === 'income' 
+                        ? 'bg-green-100 border-green-500' 
+                        : (isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300')
+                      }
+                    `}
+                  >
+                    <Text className="text-2xl mb-1">💰</Text>
+                    <Text className={`font-medium ${
+                      formData.type === 'income' ? 'text-green-700' : (isDark ? 'text-gray-300' : 'text-gray-700')
+                    }`}>
+                      Receita
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Cor */}
+              <View className="mb-4">
+                <Text className={`text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Cor da Categoria
+                </Text>
+                <View className="flex-row flex-wrap">
+                  {availableColors.map(color => (
+                    <TouchableOpacity
+                      key={color}
+                      onPress={() => setFormData({ ...formData, color })}
+                      className={`
+                        w-10 h-10 rounded-full m-1 border-2
+                        ${formData.color === color ? 'border-gray-900' : 'border-transparent'}
+                      `}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              {/* Ícone */}
+              <View className="mb-6">
+                <Text className={`text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Ícone da Categoria
+                </Text>
+                <View className="flex-row flex-wrap">
+                  {availableIcons.map(icon => (
+                    <TouchableOpacity
+                      key={icon}
+                      onPress={() => setFormData({ ...formData, icon })}
+                      className={`
+                        w-10 h-10 rounded-lg m-1 items-center justify-center border-2
+                        ${formData.icon === icon 
+                          ? (isDark ? 'border-blue-500 bg-blue-100/20' : 'border-blue-500 bg-blue-50')
+                          : (isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-100')
+                        }
+                      `}
+                    >
+                      <Text className="text-lg">{icon}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             </ScrollView>
 
-            {/* Botões */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {/* Footer */}
+            <View className={`
+              p-6 border-t flex-row space-x-3
+              ${isDark ? 'border-gray-700' : 'border-gray-200'}
+            `}>
               <TouchableOpacity
                 onPress={closeModal}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: isDark ? '#4b5563' : '#f3f4f6',
-                  marginRight: 8,
-                  alignItems: 'center'
-                }}
+                className={`
+                  flex-1 py-3 rounded-lg border-2
+                  ${isDark ? 'border-gray-600' : 'border-gray-300'}
+                `}
               >
-                <Text style={{
-                  color: isDark ? '#d1d5db' : '#374151',
-                  fontWeight: '600'
-                }}>
+                <Text className={`
+                  text-center font-medium
+                  ${isDark ? 'text-gray-300' : 'text-gray-700'}
+                `}>
                   Cancelar
                 </Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 onPress={handleAddCategory}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: formData.type === 'income' ? '#10b981' : '#ef4444',
-                  alignItems: 'center'
-                }}
+                className={`
+                  flex-1 py-3 rounded-lg
+                  ${formData.type === 'income' ? 'bg-green-600' : 'bg-red-600'}
+                `}
               >
-                <Text style={{
-                  color: '#ffffff',
-                  fontWeight: '600'
-                }}>
-                  {editingCategory ? 'Salvar' : 'Adicionar'}
+                <Text className="text-white font-medium text-center">
+                  {editingCategory ? 'Atualizar' : 'Adicionar'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -518,10 +515,10 @@ const CategoriasScreen = () => {
 
       {/* Toast */}
       <Toast
-        message={toastMessage}
-        type="success"
         visible={toastVisible}
+        message={toastMessage}
         onHide={() => setToastVisible(false)}
+        type="success"
       />
     </SafeAreaView>
   );

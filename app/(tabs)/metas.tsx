@@ -7,7 +7,6 @@ import AddValorMetaModal from '../../components/molecules/AddValorMetaModal';
 import MetaCard from '../../components/molecules/MetaCard';
 import MetaOptionsModal from '../../components/molecules/MetaOptionsModal';
 import { Meta, useMetas } from '../../hooks/useMetas';
-import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
 
 const MetasScreen = () => {
@@ -119,134 +118,86 @@ const MetasScreen = () => {
 
   const metasExibidas = activeTab === 'ativas' ? metasAtivas : metasFinalizadas;
 
-  // Estatísticas das metas
-  const totalMetas = metas.length;
-  const metasCompletas = metasFinalizadas.length;
-  const valorTotalMetas = metasAtivas.reduce((acc, meta) => acc + meta.valorMeta, 0);
-  const valorAtualMetas = metasAtivas.reduce((acc, meta) => acc + meta.valorAtual, 0);
-  const progressoGeral = valorTotalMetas > 0 ? (valorAtualMetas / valorTotalMetas) * 100 : 0;
+  const FilterButton = ({ 
+    filter, 
+    label, 
+    count,
+    color = 'blue'
+  }: { 
+    filter: 'ativas' | 'finalizadas'; 
+    label: string; 
+    count: number;
+    color?: 'blue' | 'green';
+  }) => {
+    const isActive = activeTab === filter;
+    
+    return (
+      <TouchableOpacity
+        onPress={() => setActiveTab(filter)}
+        className={`
+          px-4 py-2 rounded-full border-2 min-w-[120px] items-center mr-3
+          ${isActive 
+            ? (color === 'green' 
+              ? (isDark ? 'bg-green-600 border-green-600' : 'bg-green-600 border-green-600')
+              : (isDark ? 'bg-blue-600 border-blue-600' : 'bg-blue-600 border-blue-600')
+            )
+            : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
+          }
+        `}
+      >
+        <Text className={`
+          font-medium text-sm
+          ${isActive 
+            ? 'text-white' 
+            : (isDark ? 'text-gray-300' : 'text-gray-700')
+          }
+        `}>
+          {label}
+        </Text>
+        <Text className={`
+          text-xs mt-1
+          ${isActive 
+            ? (color === 'green' ? 'text-green-100' : 'text-blue-100')
+            : (isDark ? 'text-gray-400' : 'text-gray-500')
+          }
+        `}>
+          {count}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <Header title="Metas Financeiras" />
       
       <View className="flex-1 p-4">
-        {/* Resumo das Metas */}
-        <View className={`p-4 rounded-xl mb-4 ${
-          isDark ? 'bg-gray-800' : 'bg-white'
-        } shadow-sm`}>
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className={`text-lg font-semibold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>
-              Resumo das Metas
-            </Text>
-            <TouchableOpacity
-              onPress={() => setModalVisible(true)}
-              className="bg-blue-600 px-3 py-1.5 rounded-lg"
-            >
-              <Text className="text-white font-medium text-sm">Criar Meta</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="flex-row justify-between mb-3">
-            <View className="flex-1 items-center">
-              <Text className={`text-xl font-bold ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>
-                {totalMetas}
-              </Text>
-              <Text className={`text-xs ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Total de Metas
-              </Text>
-            </View>
-            <View className="flex-1 items-center">
-              <Text className="text-xl font-bold text-green-600">
-                {metasCompletas}
-              </Text>
-              <Text className={`text-xs ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Completas
-              </Text>
-            </View>
-            <View className="flex-1 items-center">
-              <Text className={`text-xl font-bold ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>
-                {Math.round(progressoGeral)}%
-              </Text>
-              <Text className={`text-xs ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Progresso
-              </Text>
-            </View>
-          </View>
-
-          {/* Progresso Geral */}
-          <View>
-            <View className="flex-row justify-between mb-1">
-              <Text className={`text-xs ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Progresso Total
-              </Text>
-              <Text className={`text-xs ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                {formatCurrency(valorAtualMetas)} de {formatCurrency(valorTotalMetas)}
-              </Text>
-            </View>
-            <View className={`h-2 rounded-full ${
-              isDark ? 'bg-gray-700' : 'bg-gray-200'
-            }`}>
-              <View 
-                className="h-2 rounded-full bg-blue-600"
-                style={{ width: `${Math.min(progressoGeral, 100)}%` }}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Tabs */}
-        <View className={`flex-row mb-4 rounded-xl p-1 ${
-          isDark ? 'bg-gray-800' : 'bg-white'
-        } shadow-sm`}>
-          <TouchableOpacity
-            onPress={() => setActiveTab('ativas')}
-            className={`flex-1 py-3 rounded-lg ${
-              activeTab === 'ativas' 
-                ? 'bg-blue-600' 
-                : 'transparent'
-            }`}
+        {/* Filtros e Botão Criar Meta */}
+        <View className="flex-row justify-between items-center mb-6">
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            className="flex-1"
           >
-            <Text className={`text-center font-medium ${
-              activeTab === 'ativas' 
-                ? 'text-white'
-                : (isDark ? 'text-gray-400' : 'text-gray-600')
-            }`}>
-              Metas Financeiras ({metasAtivas.length})
-            </Text>
-          </TouchableOpacity>
+            <FilterButton 
+              filter="ativas" 
+              label="Metas Financeiras" 
+              count={metasAtivas.length}
+              color="blue"
+            />
+            <FilterButton 
+              filter="finalizadas" 
+              label="Metas Passadas" 
+              count={metasFinalizadas.length}
+              color="green"
+            />
+          </ScrollView>
           
           <TouchableOpacity
-            onPress={() => setActiveTab('finalizadas')}
-            className={`flex-1 py-3 rounded-lg ${
-              activeTab === 'finalizadas' 
-                ? 'bg-green-600' 
-                : 'transparent'
-            }`}
+            onPress={() => setModalVisible(true)}
+            className="bg-blue-600 px-4 py-2 rounded-lg ml-3"
           >
-            <Text className={`text-center font-medium ${
-              activeTab === 'finalizadas' 
-                ? 'text-white'
-                : (isDark ? 'text-gray-400' : 'text-gray-600')
-            }`}>
-              Metas Passadas ({metasFinalizadas.length})
-            </Text>
+            <Text className="text-white font-medium text-sm">Criar Meta</Text>
           </TouchableOpacity>
         </View>
 
@@ -297,7 +248,7 @@ const MetasScreen = () => {
         </ScrollView>
       </View>
 
-      {/* Modal para adicionar/editar meta */}
+      {/* Modais */}
       <AddMetaModal
         visible={modalVisible}
         onClose={closeModal}
@@ -305,7 +256,6 @@ const MetasScreen = () => {
         editingMeta={editingMeta}
       />
 
-      {/* Modal para adicionar valor à meta */}
       <AddValorMetaModal
         visible={valorModalVisible}
         onClose={closeValorModal}
@@ -313,7 +263,6 @@ const MetasScreen = () => {
         meta={selectedMeta}
       />
 
-      {/* Modal de opções da meta */}
       <MetaOptionsModal
         visible={optionsModalVisible}
         onClose={closeOptionsModal}
