@@ -135,12 +135,12 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
         {/* Container do modal centralizado */}
         <View 
           className={`
-            rounded-2xl shadow-2xl max-h-[90%]
+            rounded-2xl shadow-2xl
             ${isDark ? 'bg-gray-800' : 'bg-white'}
           `}
           style={{
             width: Math.min(screenWidth * 0.9, 500),
-            maxHeight: screenHeight * 0.9
+            maxHeight: screenHeight * 0.8
           }}
         >
           {/* Header */}
@@ -172,6 +172,7 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
           <ScrollView 
             className="flex-1 px-6 py-4"
             showsVerticalScrollIndicator={false}
+            style={{ maxHeight: screenHeight * 0.8 - 160 }}
           >
             {/* Nome da Meta */}
             <View className="mb-4">
@@ -200,33 +201,34 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
               }`}>
                 Tipo da Meta
               </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View className="flex-row space-x-2">
-                  {tiposMeta.map((tipo) => (
-                    <TouchableOpacity
-                      key={tipo.value}
-                      onPress={() => setFormData({
-                        ...formData, 
-                        tipo: tipo.value as Meta['tipo'],
-                        icone: tipo.icon
-                      })}
-                      className={`px-4 py-2 rounded-lg border ${
-                        formData.tipo === tipo.value
-                          ? 'bg-blue-500 border-blue-500'
-                          : (isDark ? 'border-gray-600' : 'border-gray-300')
-                      }`}
-                    >
-                      <Text className={`text-center ${
-                        formData.tipo === tipo.value
-                          ? 'text-white'
-                          : (isDark ? 'text-gray-300' : 'text-gray-700')
-                      }`}>
-                        {tipo.icon} {tipo.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
+              <View className="flex-row flex-wrap gap-2">
+                {tiposMeta.map((tipo) => (
+                  <TouchableOpacity
+                    key={tipo.value}
+                    onPress={() => setFormData({
+                      ...formData, 
+                      tipo: tipo.value as Meta['tipo'],
+                      icone: tipo.icon
+                    })}
+                    className={`
+                      flex-row items-center px-4 py-2 rounded-lg border-2
+                      ${formData.tipo === tipo.value
+                        ? 'border-blue-500'
+                        : (isDark ? 'border-gray-600' : 'border-gray-300')
+                      }
+                    `}
+                  >
+                    <Text className="text-lg mr-2">{tipo.icon}</Text>
+                    <Text className={`text-sm ${
+                      formData.tipo === tipo.value
+                        ? (isDark ? 'text-blue-400' : 'text-blue-600')
+                        : (isDark ? 'text-gray-300' : 'text-gray-700')
+                    }`}>
+                      {tipo.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             {/* Valores */}
@@ -305,7 +307,7 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
                       key={cor}
                       onPress={() => setFormData({...formData, cor})}
                       className={`w-10 h-10 rounded-full border-2 ${
-                        formData.cor === cor ? 'border-gray-400' : 'border-transparent'
+                        formData.cor === cor ? (isDark ? 'border-white' : 'border-gray-700') : 'border-transparent'
                       }`}
                       style={{ backgroundColor: cor }}
                     />
@@ -321,23 +323,23 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
               }`}>
                 Ícone
               </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View className="flex-row space-x-2">
-                  {iconesDisponiveis.map((icone) => (
-                    <TouchableOpacity
-                      key={icone}
-                      onPress={() => setFormData({...formData, icone})}
-                      className={`w-10 h-10 rounded-lg items-center justify-center border ${
-                        formData.icone === icone
-                          ? 'bg-blue-500 border-blue-500'
-                          : (isDark ? 'border-gray-600' : 'border-gray-300')
-                      }`}
-                    >
-                      <Text className="text-lg">{icone}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
+              <View className="flex-row flex-wrap">
+                {iconesDisponiveis.map((icone) => (
+                  <TouchableOpacity
+                    key={icone}
+                    onPress={() => setFormData({...formData, icone})}
+                    className={`
+                      w-10 h-10 rounded-lg m-1 items-center justify-center border-2
+                      ${formData.icone === icone
+                        ? (isDark ? 'border-blue-500 bg-blue-100/20' : 'border-blue-500 bg-blue-50')
+                        : (isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-100')
+                      }
+                    `}
+                  >
+                    <Text className="text-lg">{icone}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             {/* Espaçamento inferior */}

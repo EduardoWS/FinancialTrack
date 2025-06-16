@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Meta } from '../../hooks/useMetas';
 import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
@@ -101,7 +101,11 @@ const AddValorMetaModal: React.FC<AddValorMetaModalProps> = ({
           </View>
 
           {/* Conteúdo */}
-          <View className="px-6 py-4">
+          <ScrollView 
+            className="px-6 py-4"
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: screenHeight * 0.8 - 160 }}
+          >
             {meta ? (
               <>
                 {/* Informações da Meta */}
@@ -205,7 +209,7 @@ const AddValorMetaModal: React.FC<AddValorMetaModalProps> = ({
                 </Text>
               </View>
             )}
-          </View>
+          </ScrollView>
 
           {/* Footer com botões */}
           <View className={`

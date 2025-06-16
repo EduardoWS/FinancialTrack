@@ -250,12 +250,12 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         {/* Container do modal centralizado */}
         <View 
           className={`
-            rounded-2xl shadow-2xl max-h-[90%]
+            rounded-2xl shadow-2xl
             ${isDark ? 'bg-gray-800' : 'bg-white'}
           `}
           style={{
             width: Math.min(screenWidth * 0.9, 500),
-            maxHeight: screenHeight * 0.9
+            maxHeight: screenHeight * 0.8
           }}
         >
           {/* Header */}
@@ -287,6 +287,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <ScrollView 
             className="flex-1 px-6 py-4"
             showsVerticalScrollIndicator={false}
+            style={{ maxHeight: screenHeight * 0.8 - 160 }}
           >
             {/* Tipo de transação */}
             <View className="mb-6">

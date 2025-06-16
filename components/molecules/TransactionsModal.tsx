@@ -40,7 +40,7 @@ const TransactionsModal: React.FC<TransactionsModalProps> = ({
         {/* Container do modal centralizado */}
         <View 
           className={`
-            rounded-2xl shadow-2xl max-h-[80%]
+            rounded-2xl shadow-2xl
             ${isDark ? 'bg-gray-800' : 'bg-white'}
           `}
           style={{
@@ -77,6 +77,7 @@ const TransactionsModal: React.FC<TransactionsModalProps> = ({
           <ScrollView 
             className="flex-1 px-6 py-4"
             showsVerticalScrollIndicator={false}
+            style={{ maxHeight: screenHeight * 0.8 - 160 }}
           >
             <View className="space-y-3">
               {transactions.map((transaction) => (
