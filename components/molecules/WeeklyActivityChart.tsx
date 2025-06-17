@@ -51,7 +51,7 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
 
   return (
     <Card 
-      className="p-4" 
+      className="p-4 h-full" 
       style={cardHeight ? { height: cardHeight } : {}}
     >
       <Text className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>

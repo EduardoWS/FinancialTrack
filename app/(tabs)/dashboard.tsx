@@ -127,22 +127,23 @@ const DashboardScreen = () => {
           </View>
 
           {/* Gráficos e componentes */}
-          
-          {/* Atividade Semanal */}
-          <View className="w-full mb-6">
-            {data?.weeklyActivity && (
-              <WeeklyActivityChart data={data.weeklyActivity} />
-            )}
-          </View>
+          <View className={`${isMobile ? '' : 'flex-row space-x-4 mb-6'}`}>
+            {/* Atividade Semanal */}
+            <View className={`${isMobile ? 'w-full mb-6' : 'flex-1'}`}>
+              {data?.weeklyActivity && (
+                <WeeklyActivityChart data={data.weeklyActivity} />
+              )}
+            </View>
 
-          {/* Últimas Transações */}
-          <View className="w-full mb-6">
-            {data?.recentTransactions && data?.allTransactions && (
-              <RecentTransactions 
-                transactions={data.recentTransactions} 
-                allTransactions={data.allTransactions}
-              />
-            )}
+            {/* Últimas Transações */}
+            <View className={`${isMobile ? 'w-full mb-6' : 'flex-1'}`}>
+              {data?.recentTransactions && data?.allTransactions && (
+                <RecentTransactions 
+                  transactions={data.recentTransactions} 
+                  allTransactions={data.allTransactions}
+                />
+              )}
+            </View>
           </View>
 
           {/* Gráficos em coluna única no mobile, lado a lado no desktop */}

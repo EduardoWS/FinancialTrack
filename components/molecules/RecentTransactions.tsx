@@ -92,7 +92,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions, a
         </View>
 
         {/* Botão ver mais */}
-        <View className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <View className="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700">
           <TouchableOpacity
             onPress={() => setModalVisible(true)}
             className="py-2"
