@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import { WeeklyActivity } from '../../data/mockData';
+import { useScreenSize } from '../../hooks/useScreenSize';
 import { useTheme } from '../../services/ThemeContext';
 import Card from '../atoms/Card';
 
@@ -11,6 +12,7 @@ interface WeeklyActivityChartProps {
 
 const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
   const { theme } = useTheme();
+  const { isMobile } = useScreenSize();
   const isDark = theme === 'dark';
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -42,15 +44,21 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
   };
 
   const { spacing, barWidth, initialSpacing, endSpacing } = calculateDimensions();
-  const chartHeight = Math.max(200, containerWidth * 0.6); // Altura proporcional
+  
+  // Altura fixa para mobile, responsiva para desktop
+  const cardHeight = isMobile ? 350 : undefined;
+  const chartHeight = isMobile ? 220 : 250;
 
   return (
-    <Card className="p-4 h-full">
+    <Card 
+      className="p-4" 
+      style={cardHeight ? { height: cardHeight } : {}}
+    >
       <Text className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
         Atividade Semanal
       </Text>
       <View 
-        className="flex-1"
+        className={isMobile ? '' : 'flex-1'}
         onLayout={(event) => {
           const { width } = event.nativeEvent.layout;
           setContainerWidth(width);
@@ -59,7 +67,7 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
         {containerWidth > 0 && (
           <BarChart
             stackData={barData}
-            height={250}
+            height={chartHeight}
             spacing={spacing}
             barWidth={barWidth}
             initialSpacing={initialSpacing}

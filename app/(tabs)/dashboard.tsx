@@ -8,11 +8,13 @@ import CategoryExpensesChart from '../../components/molecules/CategoryExpensesCh
 import RecentTransactions from '../../components/molecules/RecentTransactions';
 import WeeklyActivityChart from '../../components/molecules/WeeklyActivityChart';
 import { useDashboardData } from '../../hooks/useDashboardData';
+import { useScreenSize } from '../../hooks/useScreenSize';
 import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
 
 const DashboardScreen = () => {
   const { theme } = useTheme();
+  const { isMobile } = useScreenSize();
   const { data, loading, error, refetch } = useDashboardData();
   const isDark = theme === 'dark';
 
@@ -64,26 +66,27 @@ const DashboardScreen = () => {
           />
         }
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: isMobile ? 20 : 0 }}
       >
-        <View className="p-4 space-y-4">
+        <View className="p-4">
           {/* Saudação */}
-          <Text className={`text-2xl font-bold mb-2 ${
+          <Text className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold ${
             isDark ? 'text-white' : 'text-gray-800'
-          }`}>
+          } mb-6`}>
             Bem-vindo ao seu Dashboard!
           </Text>
 
           {/* Cards de estatísticas principais */}
-          <View className="flex-row flex-wrap gap-4 mb-4">
+          <View className={`${isMobile ? '' : 'flex-row flex-wrap gap-4'} mb-6`}>
             {/* Saldo Total */}
-            <View className="flex-1 min-w-[150px]">
-              <Card className="items-center">
+            <View className={`${isMobile ? 'w-full mb-4' : 'flex-1 min-w-[150px]'}`}>
+              <Card className="items-center p-4">
                 <Text className={`text-sm font-medium ${
                   isDark ? 'text-gray-400' : 'text-gray-600'
                 }`}>
                   Saldo Total
                 </Text>
-                <Text className={`text-2xl font-bold mt-1 ${
+                <Text className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold mt-1 ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}>
                   {formatCurrency(data?.stats.totalBalance || 0)}
@@ -91,72 +94,71 @@ const DashboardScreen = () => {
               </Card>
             </View>
 
-            {/* Receitas do Mês */}
-            <View className="flex-1 min-w-[150px]">
-              <Card className="items-center">
-                <Text className={`text-sm font-medium ${
-                  isDark ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Receitas
-                </Text>
-                <Text className="text-2xl font-bold mt-1 text-green-600">
-                  {formatCurrency(data?.stats.monthlyIncome || 0)}
-                </Text>
-              </Card>
-            </View>
+            {/* Receitas e Gastos lado a lado no mobile */}
+            <View className={isMobile ? 'flex-row space-x-4' : 'contents'}>
+              {/* Receitas do Mês */}
+              <View className={isMobile ? 'flex-1 mr-2' : 'flex-1 min-w-[150px]'}>
+                <Card className="items-center p-4">
+                  <Text className={`text-sm font-medium ${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Receitas
+                  </Text>
+                  <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold mt-1 text-green-600`}>
+                    {formatCurrency(data?.stats.monthlyIncome || 0)}
+                  </Text>
+                </Card>
+              </View>
 
-            {/* Gastos do Mês */}
-            <View className="flex-1 min-w-[150px]">
-              <Card className="items-center">
-                <Text className={`text-sm font-medium ${
-                  isDark ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Gastos
-                </Text>
-                <Text className="text-2xl font-bold mt-1 text-red-600">
-                  {formatCurrency(data?.stats.monthlyExpenses || 0)}
-                </Text>
-              </Card>
+              {/* Gastos do Mês */}
+              <View className={isMobile ? 'flex-1 ml-2' : 'flex-1 min-w-[150px]'}>
+                <Card className="items-center p-4">
+                  <Text className={`text-sm font-medium ${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Gastos
+                  </Text>
+                  <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold mt-1 text-red-600`}>
+                    {formatCurrency(data?.stats.monthlyExpenses || 0)}
+                  </Text>
+                </Card>
+              </View>
             </View>
           </View>
 
-          {/* Layout responsivo para desktop e mobile */}
-          <View className="space-y-4">
-            {/* Primeira Linha */}
-            <View className="flex-col md:flex-row md:space-x-4 md:space-y-0 space-y-4">
-              {/* Atividade Semanal */}
-              <View className="flex-1">
-                {data?.weeklyActivity && (
-                  <WeeklyActivityChart data={data.weeklyActivity} />
-                )}
-              </View>
+          {/* Gráficos e componentes */}
+          
+          {/* Atividade Semanal */}
+          <View className="w-full mb-6">
+            {data?.weeklyActivity && (
+              <WeeklyActivityChart data={data.weeklyActivity} />
+            )}
+          </View>
 
-              {/* Últimas Transações */}
-              <View className="flex-1">
-                {data?.recentTransactions && data?.allTransactions && (
-                  <RecentTransactions 
-                    transactions={data.recentTransactions} 
-                    allTransactions={data.allTransactions}
-                  />
-                )}
-              </View>
+          {/* Últimas Transações */}
+          <View className="w-full mb-6">
+            {data?.recentTransactions && data?.allTransactions && (
+              <RecentTransactions 
+                transactions={data.recentTransactions} 
+                allTransactions={data.allTransactions}
+              />
+            )}
+          </View>
+
+          {/* Gráficos em coluna única no mobile, lado a lado no desktop */}
+          <View className={isMobile ? '' : 'flex-row space-x-4'}>
+            {/* Histórico de Saldo */}
+            <View className={`${isMobile ? 'w-full mb-6' : 'flex-1'}`}>
+              {data?.balanceHistory && (
+                <BalanceHistoryChart data={data.balanceHistory} />
+              )}
             </View>
 
-            {/* Segunda Linha */}
-            <View className="flex-col md:flex-row md:space-x-4 md:space-y-0 space-y-4">
-              {/* Histórico de Saldo */}
-              <View className="flex-1">
-                {data?.balanceHistory && (
-                  <BalanceHistoryChart data={data.balanceHistory} />
-                )}
-              </View>
-
-              {/* Gastos por Categoria */}
-              <View className="flex-1">
-                {data?.categoryExpenses && (
-                  <CategoryExpensesChart data={data.categoryExpenses} />
-                )}
-              </View>
+            {/* Gastos por Categoria */}
+            <View className={isMobile ? 'w-full' : 'flex-1'}>
+              {data?.categoryExpenses && (
+                <CategoryExpensesChart data={data.categoryExpenses} />
+              )}
             </View>
           </View>
 
