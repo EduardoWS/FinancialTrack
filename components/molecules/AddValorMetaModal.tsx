@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Meta } from '../../hooks/useMetas';
+import { Meta } from '../../services/metasService';
 import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
 
@@ -166,15 +166,19 @@ const AddValorMetaModal: React.FC<AddValorMetaModalProps> = ({
                     Valor a adicionar
                   </Text>
                   <TextInput
-                    className={`border rounded-lg p-4 text-lg ${
+                    className={`border rounded-lg p-4 text-lg font-semibold ${
                       isDark 
                         ? 'bg-gray-700 border-gray-600 text-white' 
                         : 'bg-white border-gray-300 text-gray-900'
                     }`}
                     placeholder="0,00"
                     placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                    value={valor}
-                    onChangeText={setValor}
+                    value={valor ? formatCurrency(parseFloat(valor) || 0).replace('R$', '').trim() : ''}
+                    onChangeText={(text) => {
+                      // Remove formatação e mantém apenas números e vírgula/ponto
+                      const numericText = text.replace(/[^\d,]/g, '').replace(',', '.');
+                      setValor(numericText);
+                    }}
                     keyboardType="numeric"
                     autoFocus
                   />
@@ -184,13 +188,20 @@ const AddValorMetaModal: React.FC<AddValorMetaModalProps> = ({
                     {[100, 500, 1000].map((sugestao) => (
                       <TouchableOpacity
                         key={sugestao}
-                        onPress={() => setValor(sugestao.toString())}
-                        className={`px-4 py-2 rounded-lg border ${
-                          isDark ? 'border-gray-600' : 'border-gray-300'
+                        onPress={() => {
+                          const valorAtual = parseFloat(valor) || 0;
+                          const novoValor = valorAtual + sugestao;
+                          setValor(novoValor.toString());
+                        }}
+                        className={`px-4 py-2 rounded-lg border-2 active:scale-95 transition-transform ${
+                          isDark 
+                            ? 'border-blue-500 bg-blue-500 bg-opacity-10' 
+                            : 'border-blue-500 bg-blue-50'
                         }`}
+                        activeOpacity={0.8}
                       >
-                        <Text className={`text-sm ${
-                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        <Text className={`text-sm font-semibold ${
+                          isDark ? 'text-blue-400' : 'text-blue-600'
                         }`}>
                           +{formatCurrency(sugestao)}
                         </Text>

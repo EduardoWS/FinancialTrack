@@ -1,6 +1,6 @@
 import React from 'react';
 import { Dimensions, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { Meta } from '../../hooks/useMetas';
+import { Meta } from '../../services/metasService';
 import { useTheme } from '../../services/ThemeContext';
 
 interface MetaOptionsModalProps {
@@ -11,6 +11,7 @@ interface MetaOptionsModalProps {
   onAddValor: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onFinalizar: () => void;
   progresso: number;
 }
 
@@ -22,7 +23,8 @@ const MetaOptionsModal: React.FC<MetaOptionsModalProps> = ({
   onAddValor,
   onEdit,
   onDelete,
-  progresso
+  onFinalizar,
+  progresso,
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -79,7 +81,7 @@ const MetaOptionsModal: React.FC<MetaOptionsModalProps> = ({
           </View>
 
           {/* Lista de opções */}
-          <ScrollView 
+          <ScrollView
             className="flex-1"
             showsVerticalScrollIndicator={false}
             style={{ maxHeight: screenHeight * 0.8 - 200 }}
@@ -88,10 +90,7 @@ const MetaOptionsModal: React.FC<MetaOptionsModalProps> = ({
               {isActive && (
                 <>
                   <TouchableOpacity
-                    onPress={() => {
-                      onAddValor();
-                      onClose();
-                    }}
+                    onPress={onAddValor}
                     className={`
                       p-4 rounded-lg mb-3 flex-row items-center
                       ${isDark ? 'bg-green-100/10 border border-green-500' : 'bg-green-50 border border-green-200'}
@@ -112,15 +111,34 @@ const MetaOptionsModal: React.FC<MetaOptionsModalProps> = ({
                     </View>
                   </TouchableOpacity>
 
+                  <TouchableOpacity
+                    onPress={onFinalizar}
+                    className={`
+                      p-4 rounded-lg mb-3 flex-row items-center
+                      ${isDark ? 'bg-yellow-100/10 border border-yellow-500' : 'bg-yellow-50 border border-yellow-200'}
+                    `}
+                  >
+                    <Text className="text-2xl mr-3">🏆</Text>
+                    <View>
+                      <Text className={`font-medium ${
+                        isDark ? 'text-yellow-400' : 'text-yellow-700'
+                      }`}>
+                        Finalizar Meta
+                      </Text>
+                      <Text className={`text-xs ${
+                        isDark ? 'text-yellow-300' : 'text-yellow-600'
+                      }`}>
+                        Marcar como concluída
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
                   <View className={`h-px mb-3 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
                 </>
               )}
 
               <TouchableOpacity
-                onPress={() => {
-                  onEdit();
-                  onClose();
-                }}
+                onPress={onEdit}
                 className={`
                   p-4 rounded-lg mb-3 flex-row items-center
                   ${isDark ? 'bg-blue-100/10 border border-blue-500' : 'bg-blue-50 border border-blue-200'}
@@ -142,10 +160,7 @@ const MetaOptionsModal: React.FC<MetaOptionsModalProps> = ({
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => {
-                  onDelete();
-                  onClose();
-                }}
+                onPress={onDelete}
                 className={`
                   p-4 rounded-lg flex-row items-center
                   ${isDark ? 'bg-red-100/10 border border-red-500' : 'bg-red-50 border border-red-200'}

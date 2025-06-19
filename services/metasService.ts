@@ -1,172 +1,137 @@
-import { mockMetasData } from '../data/mockMetas';
-import { Meta } from '../hooks/useMetas';
-import { APP_CONFIG } from './config';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  Timestamp,
+  updateDoc,
+} from 'firebase/firestore';
+import { auth, db } from './firebaseConfig';
 
-// Interface para os dados de metas
-export interface MetasData {
-  metas: Meta[];
-  metasAtivas: Meta[];
-  metasFinalizadas: Meta[];
-  estatisticas: {
-    totalMetas: number;
-    metasFinalizadas: number;
-    valorTotalMetas: number;
-    valorTotalArrecadado: number;
-    percentualGeral: number;
-  };
+export interface Meta {
+  id: string;
+  nome: string;
+  valorAtual: number;
+  valorMeta: number;
+  tipo: 'viagem' | 'casa' | 'investimentos' | 'emergencia' | 'outros';
+  cor: string;
+  icone: string;
+  dataInicio: Date;
+  dataLimite?: Date;
+  descricao?: string;
+  finalizada: boolean;
 }
 
-// Simula delay de rede
-const simulateNetworkDelay = () => 
-  new Promise(resolve => setTimeout(resolve, APP_CONFIG.MOCK_DELAY));
+// Interface para dados do Firestore, com Timestamps
+interface MetaFirestore {
+  nome: string;
+  valorAtual: number;
+  valorMeta: number;
+  tipo: 'viagem' | 'casa' | 'investimentos' | 'emergencia' | 'outros';
+  cor: string;
+  icone: string;
+  dataInicio: Timestamp;
+  dataLimite?: Timestamp;
+  descricao?: string;
+  finalizada: boolean;
+}
 
-// Função para buscar dados das metas
-export const fetchMetasData = async (): Promise<MetasData> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/metas`);
-      const metas = await response.json();
-      return processMetasData(metas);
-    } catch (error) {
-      console.error('Erro ao buscar metas da API:', error);
-      return processMetasData(mockMetasData);
-    }
-  } else {
-    await simulateNetworkDelay();
-    return processMetasData(mockMetasData);
-  }
+const getMetasCollectionRef = () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Usuário não autenticado para acessar metas.');
+  return collection(db, 'users', user.uid, 'metas');
 };
 
-// Função para processar dados das metas
-const processMetasData = (metas: Meta[]): MetasData => {
-  const metasAtivas = metas.filter(meta => !meta.finalizada);
-  const metasFinalizadas = metas.filter(meta => meta.finalizada);
-  
-  const estatisticas = {
-    totalMetas: metas.length,
-    metasFinalizadas: metasFinalizadas.length,
-    valorTotalMetas: metas.reduce((acc, meta) => acc + meta.valorMeta, 0),
-    valorTotalArrecadado: metas.reduce((acc, meta) => acc + meta.valorAtual, 0),
-    percentualGeral: metas.length > 0 
-      ? Math.round((metas.reduce((acc, meta) => acc + (meta.valorAtual / meta.valorMeta), 0) / metas.length) * 100)
-      : 0
-  };
-
+const fromFirestore = (doc: any): Meta => {
+  const data = doc.data() as MetaFirestore;
   return {
-    metas,
-    metasAtivas,
-    metasFinalizadas,
-    estatisticas
+    id: doc.id,
+    ...data,
+    dataInicio: data.dataInicio.toDate(),
+    dataLimite: data.dataLimite ? data.dataLimite.toDate() : undefined,
   };
 };
 
-// Função para criar nova meta
-export const createMeta = async (novaMeta: Omit<Meta, 'id'>): Promise<Meta> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/metas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(novaMeta)
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('Erro ao criar meta:', error);
-      throw error;
+const toFirestore = (meta: Partial<Omit<Meta, 'id'>>) => {
+  const data = { ...meta };
+
+  // Firestore não aceita `undefined`. Precisamos remover chaves com esse valor.
+  Object.keys(data).forEach(key => {
+    if ((data as any)[key] === undefined) {
+      delete (data as any)[key];
     }
-  } else {
-    await simulateNetworkDelay();
-    const meta: Meta = {
-      ...novaMeta,
-      id: Date.now().toString()
-    };
-    return meta;
+  });
+
+  // Converte os campos de data para Timestamps do Firestore
+  if (data.dataInicio) {
+    (data as any).dataInicio = Timestamp.fromDate(data.dataInicio);
   }
+  if (data.dataLimite) {
+    (data as any).dataLimite = Timestamp.fromDate(data.dataLimite);
+  }
+
+  return data;
 };
 
-// Função para atualizar meta
-export const updateMeta = async (id: string, metaAtualizada: Partial<Meta>): Promise<Meta> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/metas/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(metaAtualizada)
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('Erro ao atualizar meta:', error);
-      throw error;
-    }
-  } else {
-    await simulateNetworkDelay();
-    return { ...metaAtualizada, id } as Meta;
-  }
+export const fetchUserMetas = async (): Promise<Meta[]> => {
+  const metasCollectionRef = getMetasCollectionRef();
+  const querySnapshot = await getDocs(metasCollectionRef);
+  return querySnapshot.docs.map(fromFirestore);
 };
 
-// Função para excluir meta
+export const createMeta = async (metaData: Omit<Meta, 'id'>): Promise<Meta> => {
+  const metasCollectionRef = getMetasCollectionRef();
+  const firestoreData = toFirestore(metaData);
+  const docRef = await addDoc(metasCollectionRef, firestoreData);
+  return {
+    id: docRef.id,
+    ...metaData,
+  };
+};
+
+export const updateMeta = async (id: string, metaData: Partial<Omit<Meta, 'id'>>): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Usuário não autenticado.');
+  
+  const metaDocRef = doc(db, 'users', user.uid, 'metas', id);
+  const firestoreData = toFirestore(metaData);
+  await updateDoc(metaDocRef, firestoreData);
+};
+
 export const deleteMeta = async (id: string): Promise<void> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      await fetch(`${APP_CONFIG.API_BASE_URL}/metas/${id}`, {
-        method: 'DELETE'
-      });
-    } catch (error) {
-      console.error('Erro ao excluir meta:', error);
-      throw error;
-    }
-  } else {
-    await simulateNetworkDelay();
-  }
+  const user = auth.currentUser;
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  const metaDocRef = doc(db, 'users', user.uid, 'metas', id);
+  await deleteDoc(metaDocRef);
 };
 
-// Função para adicionar valor à meta
-export const addValueToMeta = async (id: string, valor: number): Promise<Meta> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/metas/${id}/add-value`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ valor })
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('Erro ao adicionar valor à meta:', error);
-      throw error;
+export const addValueToMeta = async (id: string, valor: number): Promise<void> => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Usuário não autenticado.');
+
+    // Para esta operação, primeiro precisamos ler a meta
+    const metas = await fetchUserMetas();
+    const meta = metas.find(m => m.id === id);
+
+    if (meta) {
+        const novoValor = meta.valorAtual + valor;
+        const finalizada = novoValor >= meta.valorMeta;
+        await updateMeta(id, { valorAtual: novoValor, finalizada });
+    } else {
+        throw new Error('Meta não encontrada para adicionar valor.');
     }
-  } else {
-    await simulateNetworkDelay();
-    // Mock de resposta
-    const metaMock = mockMetasData.find(m => m.id === id);
-    if (metaMock) {
-      const novoValor = metaMock.valorAtual + valor;
-      const finalizada = novoValor >= metaMock.valorMeta;
-      return { 
-        ...metaMock, 
-        valorAtual: novoValor,
-        finalizada
-      };
-    }
-    throw new Error('Meta não encontrada');
-  }
 };
 
-// Função para calcular progresso
 export const calcularProgresso = (valorAtual: number, valorMeta: number): number => {
-  if (valorMeta === 0) return 0;
-  return Math.min((valorAtual / valorMeta) * 100, 100);
+    if (valorMeta === 0) return 0;
+    return Math.min((valorAtual / valorMeta) * 100, 100);
 };
 
-// Função para formatar valores monetários
 export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value);
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(value);
 }; 

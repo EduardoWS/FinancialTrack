@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Meta } from '../../hooks/useMetas';
+import { Meta } from '../../services/metasService';
 import { useTheme } from '../../services/ThemeContext';
 
 interface AddMetaModalProps {
