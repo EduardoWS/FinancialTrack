@@ -61,13 +61,13 @@ export default function CadastroScreen() {
       return;
     }
 
-    const success = await register(email.trim(), nome.trim(), senha);
+    const result = await register(email.trim(), nome.trim(), senha);
     
-    if (success) {
+    if (result.success) {
       successToast('Conta criada com sucesso!');
       router.replace('/dashboard');
     } else {
-      errorToast('Erro ao criar conta. Tente novamente.');
+      errorToast(result.error || 'Erro ao criar conta. Tente novamente.');
     }
   };
 

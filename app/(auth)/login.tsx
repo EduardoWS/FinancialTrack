@@ -37,12 +37,12 @@ export default function LoginScreen() {
       return;
     }
 
-    const success = await login(email.trim(), senha);
+    const result = await login(email.trim(), senha);
     
-    if (success) {
+    if (result.success) {
       router.replace('/dashboard');
     } else {
-      errorToast('Email ou senha incorretos. Tente novamente.');
+      errorToast(result.error || 'Ocorreu um erro ao fazer login.');
     }
   };
 
