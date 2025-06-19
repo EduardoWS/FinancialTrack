@@ -205,16 +205,19 @@ const CategoriasScreen = () => {
               <View 
                 key={category.id} 
                 className={`
-                  flex-row items-center justify-between p-4 rounded-xl mb-3 shadow-sm
+                  flex-row items-center justify-between rounded-xl mb-3 shadow-sm overflow-hidden
                   ${isDark ? 'bg-gray-800' : 'bg-white'}
                 `}
               >
-                <View className="flex-row items-center flex-1">
-                  <View 
-                    className="w-10 h-10 rounded-full justify-center items-center mr-3"
-                    style={{ backgroundColor: category.color }}
-                  >
-                    <Text className="text-lg">{category.icon}</Text>
+                {/* Faixa colorida à esquerda */}
+                <View 
+                  className="w-4 h-full absolute left-0 top-0 bottom-0"
+                  style={{ backgroundColor: category.color }}
+                />
+                
+                <View className="flex-row items-center flex-1 p-4">
+                  <View className="w-8 h-8 justify-center items-center mx-4">
+                    <Text className="text-2xl">{category.icon}</Text>
                   </View>
                   
                   <View className="flex-1">
@@ -231,7 +234,7 @@ const CategoriasScreen = () => {
                   </View>
                 </View>
 
-                <View className="flex-row">
+                <View className="flex-row p-4">
                   <TouchableOpacity
                     onPress={() => handleEditCategory(category)}
                     className={`p-2 mr-2 rounded-lg ${
