@@ -176,7 +176,7 @@ export const mockDashboardData = {
     }
   ] as Transaction[],
 
-  // Últimas 3 transações para exibição rápida
+  // Últimas N transações para exibição rápida
   get recentTransactions() {
     return this.allTransactions.slice(0, 4);
   },
@@ -233,6 +233,5 @@ export const mockDashboardData = {
     totalBalance: 12450.75,
     monthlyIncome: 8500.00,
     monthlyExpenses: 6200.00,
-    savings: 2300.00
   }
 }; 

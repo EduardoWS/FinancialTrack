@@ -12,7 +12,6 @@ export interface DashboardData {
     totalBalance: number;
     monthlyIncome: number;
     monthlyExpenses: number;
-    savings: number;
   };
 }
 
