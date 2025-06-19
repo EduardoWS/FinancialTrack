@@ -1,7 +1,7 @@
 import React from 'react';
 import { RefreshControl, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import Card from '../../components/atoms/Card';
-import LoadingSpinner from '../../components/atoms/LoadingSpinner';
+import ScreenLoader from '../../components/atoms/ScreenLoader';
 import Header from '../../components/Header';
 import BalanceHistoryChart from '../../components/molecules/BalanceHistoryChart';
 import CategoryExpensesChart from '../../components/molecules/CategoryExpensesChart';
@@ -20,15 +20,7 @@ const DashboardScreen = () => {
 
   // Componente de loading
   if (loading && !data) {
-    return (
-      <SafeAreaView className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <Header title="Dashboard" />
-        <LoadingSpinner 
-          className="flex-1" 
-          text="Carregando dados do dashboard..." 
-        />
-      </SafeAreaView>
-    );
+    return <ScreenLoader title="Dashboard" text="Carregando dados do dashboard..." />;
   }
 
   // Componente de erro

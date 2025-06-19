@@ -4,7 +4,7 @@ import { Platform, Text, TextInput, TextInputProps, TouchableOpacity, View } fro
 
 interface InputProps extends TextInputProps {
   label?: string;
-  error?: string;
+  error?: string | null;
   icon?: keyof typeof Ionicons.glyphMap;
   isPassword?: boolean;
 }

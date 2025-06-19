@@ -1,17 +1,24 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { auth } from './firebaseConfig'; 
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { APP_CONFIG } from './config';
+import { 
+  User,
+  createUserWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  signOut,
+  updateProfile
+} from 'firebase/auth';
 
-interface User {
-  id: string;
-  email: string;
-  nome: string;
+// A interface do usuário pode ser a do próprio Firebase, que já tem 'email', 'displayName', 'uid', etc.
+// Mas podemos criar uma mais simples para o nosso contexto.
+interface AppUser {
+  uid: string;
+  email: string | null;
+  nome: string | null;
 }
 
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
+  user: AppUser | null;
   isLoading: boolean;
   login: (email: string, senha: string) => Promise<{ success: boolean; error?: string }>;
   register: (email: string, nome: string, senha: string) => Promise<{ success: boolean; error?: string }>;
@@ -34,97 +41,44 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Começa true para esperar a verificação inicial
 
-  // Verifica se há token salvo no AsyncStorage ao inicializar
+  // Listener do Firebase que observa mudanças no estado de autenticação
   useEffect(() => {
-    checkStoredAuth();
-  }, []);
-
-  const checkStoredAuth = async () => {
-    try {
-      const storedToken = await AsyncStorage.getItem('@auth_token');
-      const storedUser = await AsyncStorage.getItem('@auth_user');
-      
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+    // onAuthStateChanged retorna uma função de 'unsubscribe'
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Usuário está logado
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          nome: firebaseUser.displayName,
+        });
+      } else {
+        // Usuário está deslogado
+        setUser(null);
       }
-    } catch (error) {
-      console.error('Erro ao verificar autenticação armazenada:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setIsLoading(false); // Verificação concluída
+    });
+
+    // Limpa o listener quando o componente desmontar
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email: string, senha: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      if (!APP_CONFIG.USE_API) {
-        // MOCK LOGIN
-        return await new Promise((resolve) => {
-          setTimeout(async () => {
-            if (email === 'test@test.com' && senha === '123456') {
-              const loggedInUser: User = {
-                id: 'mock-user-id',
-                email: 'test@test.com',
-                nome: 'Usuário de Teste',
-              };
-              const sessionToken = 'mock-session-token';
-
-              await AsyncStorage.setItem('@auth_token', sessionToken);
-              await AsyncStorage.setItem('@auth_user', JSON.stringify(loggedInUser));
-
-              setUser(loggedInUser);
-              setToken(sessionToken);
-              resolve({ success: true });
-            } else {
-              resolve({ success: false, error: 'Email ou senha inválidos (mock).' });
-            }
-          }, APP_CONFIG.MOCK_DELAY);
-        });
+      await signInWithEmailAndPassword(auth, email, senha);
+      return { success: true };
+    } catch (error: any) {
+      // Mapeia erros do Firebase para mensagens amigáveis
+      let errorMessage = 'Ocorreu um erro ao fazer login.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = 'Email ou senha inválidos.';
       }
-
-      const params = new URLSearchParams();
-      params.append('email', email);
-      params.append('password', senha);
-
-      const response = await axios.post(`${APP_CONFIG.API_BASE_URL}/login`, params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
-
-      if (response.status === 200 && response.data.session) {
-        const sessionToken = response.data.session;
-
-        // ATENÇÃO: O backend não retorna o nome do usuário no login.
-        // Usando um nome genérico. O nome real só é obtido no cadastro.
-        const loggedInUser: User = {
-          id: email,
-          email: email,
-          nome: 'Usuário',
-        };
-
-        await AsyncStorage.setItem('@auth_token', sessionToken);
-        await AsyncStorage.setItem('@auth_user', JSON.stringify(loggedInUser));
-
-        setUser(loggedInUser);
-        setToken(sessionToken);
-        return { success: true };
-      }
-
-      return { success: false, error: 'Ocorreu um erro desconhecido.' };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        if (error.response.status === 400) {
-          return { success: false, error: 'Email ou senha incorretos. Tente novamente.' };
-        }
-      }
-      console.error('Erro no login:', error);
-      return { success: false, error: 'Não foi possível conectar ao servidor. Verifique sua conexão.' };
+      console.error('Erro no login:', error.code, error.message);
+      return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
@@ -133,69 +87,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (email: string, nome: string, senha: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      if (!APP_CONFIG.USE_API) {
-        // MOCK REGISTER
-        return await new Promise((resolve) => {
-          setTimeout(async () => {
-            if (email === 'test@test.com') {
-              resolve({ success: false, error: 'Este email já está cadastrado (mock).' });
-            } else {
-              const registeredUser: User = {
-                id: `mock-id-${email}`,
-                email,
-                nome,
-              };
-              const sessionToken = 'mock-session-token-register';
-              await AsyncStorage.setItem('@auth_token', sessionToken);
-              await AsyncStorage.setItem('@auth_user', JSON.stringify(registeredUser));
-              setUser(registeredUser);
-              setToken(sessionToken);
-              resolve({ success: true });
-            }
-          }, APP_CONFIG.MOCK_DELAY);
-        });
-      }
+      // 1. Cria o usuário com email e senha
+      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      
+      // 2. Atualiza o perfil do usuário recém-criado para adicionar o nome
+      await updateProfile(userCredential.user, {
+        displayName: nome,
+      });
 
-      const registerParams = new URLSearchParams();
-      registerParams.append('email', email);
-      registerParams.append('user', nome);
-      registerParams.append('password', senha);
+      // 3. Atualiza nosso estado local (opcional, pois o onAuthStateChanged já fará isso)
+      setUser({
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        nome: userCredential.user.displayName,
+      });
 
-      await axios.post(
-        `${APP_CONFIG.API_BASE_URL}/cria_user`,
-        registerParams,
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        },
-      );
-
-      // Se o cadastro foi bem-sucedido (não lançou erro), faz o login
-      const loginResult = await login(email, senha);
-      if (loginResult.success) {
-        const registeredUser: User = {
-          id: email,
-          email: email,
-          nome: nome,
-        };
-        await AsyncStorage.setItem('@auth_user', JSON.stringify(registeredUser));
-        setUser(registeredUser);
-        return { success: true };
-      } else {
-        return {
-          success: false,
-          error: 'Cadastro realizado, mas o login automático falhou. Tente fazer login manualmente.',
-        };
+      return { success: true };
+    } catch (error: any) {
+      // Mapeia erros do Firebase para mensagens amigáveis
+      let errorMessage = 'Erro ao criar conta. Tente novamente.';
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'Este email já está cadastrado.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
       }
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        if (error.response.status === 409) {
-          return { success: false, error: 'Este email já está cadastrado.' };
-        }
-      }
-      console.error('Erro no cadastro:', error);
-      return { success: false, error: 'Não foi possível conectar ao servidor. Verifique sua conexão.' };
+      console.error('Erro no cadastro:', error.code, error.message);
+      return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
@@ -203,25 +120,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async (): Promise<void> => {
     try {
-      await AsyncStorage.removeItem('@auth_token');
-      await AsyncStorage.removeItem('@auth_user');
-      setUser(null);
-      setToken(null);
+      await signOut(auth);
+      // O listener onAuthStateChanged cuidará de setar o user para null
     } catch (error) {
       console.error('Erro no logout:', error);
     }
   };
 
-  const isAuthenticated = !!user && !!token;
+  const isAuthenticated = !!user;
 
   const value = {
     user,
-    token,
     isLoading,
     login,
     register,
     logout,
-    isAuthenticated
+    isAuthenticated,
   };
 
   return (

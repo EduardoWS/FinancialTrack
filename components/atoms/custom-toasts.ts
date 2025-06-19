@@ -1,17 +1,33 @@
-import { Alert } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 export const successToast = (message: string, title: string = 'Sucesso') => {
-  Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
+  Toast.show({
+    type: 'success',
+    text1: title,
+    text2: message,
+  });
 };
 
 export const errorToast = (message: string, title: string = 'Erro') => {
-  Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
+  Toast.show({
+    type: 'error',
+    text1: title,
+    text2: message,
+  });
 };
 
 export const warningToast = (message: string, title: string = 'Atenção') => {
-  Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
+  Toast.show({
+    type: 'info', // react-native-toast-message doesn't have a 'warning' type by default
+    text1: title,
+    text2: message,
+  });
 };
 
 export const infoToast = (message: string, title: string = 'Informação') => {
-  Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
+  Toast.show({
+    type: 'info',
+    text1: title,
+    text2: message,
+  });
 }; 
