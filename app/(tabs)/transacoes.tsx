@@ -14,6 +14,7 @@ const TransacoesScreen = () => {
   const { width } = Dimensions.get('window');
   const isMobile = width < 768;
   const showCategory = width >= 500;
+  const isVeryNarrow = width < 400;
   
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -334,6 +335,7 @@ const TransacoesScreen = () => {
                     </View>
                     <Text className={`
                       font-medium flex-1
+                      ${isVeryNarrow ? 'text-sm' : ''}
                       ${isDark ? 'text-white' : 'text-gray-900'}
                     `}>
                       {transaction.description}
@@ -363,7 +365,11 @@ const TransacoesScreen = () => {
                       text-sm
                       ${isDark ? 'text-gray-400' : 'text-gray-600'}
                     `}>
-                      {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                      {new Date(transaction.date).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: isVeryNarrow ? '2-digit' : 'numeric',
+                      })}
                     </Text>
                   </View>
 
@@ -371,6 +377,7 @@ const TransacoesScreen = () => {
                   <View className="w-24 items-end">
                     <Text className={`
                       font-semibold
+                      ${isVeryNarrow ? 'text-sm' : ''}
                       ${getAmountColor(transaction.type)}
                     `}>
                       {transaction.type === 'income' ? '+' : '-'}

@@ -1,16 +1,17 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { Meta } from '../../services/metasService';
 import { formatCurrency } from '../../services/dashboardService';
+import { Meta } from '../../services/metasService';
 import { useTheme } from '../../services/ThemeContext';
 
 interface MetaCardProps {
   meta: Meta;
   onPress?: () => void;
   progresso: number;
+  isVeryNarrow?: boolean;
 }
 
-const MetaCard: React.FC<MetaCardProps> = ({ meta, onPress, progresso }) => {
+const MetaCard: React.FC<MetaCardProps> = ({ meta, onPress, progresso, isVeryNarrow }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -42,12 +43,16 @@ const MetaCard: React.FC<MetaCardProps> = ({ meta, onPress, progresso }) => {
               <Text className="text-2xl">{meta.icone}</Text>
             </View>
             <View>
-              <Text className={`font-semibold text-base ${
+              <Text className={`font-semibold ${
+                isVeryNarrow ? 'text-base' : 'text-base'
+              } ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
                 {meta.nome}
               </Text>
               <Text className={`text-sm ${
+                isVeryNarrow ? 'text-xs' : 'text-sm'
+              } ${
                 isDark ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 {formatCurrency(meta.valorAtual)} de {formatCurrency(meta.valorMeta)}
@@ -56,7 +61,9 @@ const MetaCard: React.FC<MetaCardProps> = ({ meta, onPress, progresso }) => {
           </View>
           <View className="items-end">
             <Text 
-              className="text-lg font-bold"
+              className={`font-bold ${
+                isVeryNarrow ? 'text-base' : 'text-lg'
+              }`}
               style={{ color: progressColor }}
             >
               {Math.round(progresso)}%

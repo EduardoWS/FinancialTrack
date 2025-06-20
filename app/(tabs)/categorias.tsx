@@ -14,6 +14,7 @@ const CategoriasScreen = () => {
   const isDark = theme === 'dark';
   const { width } = Dimensions.get('window');
   const isMobile = width < 768;
+  const isVeryNarrow = width < 400;
   
   // Estado inicial com categorias padrão
   const {
@@ -257,6 +258,8 @@ const CategoriasScreen = () => {
                   
                   <View className="flex-1">
                     <Text className={`text-base font-semibold ${
+                      isVeryNarrow ? 'text-sm' : 'text-base'
+                    } ${
                       isDark ? 'text-white' : 'text-gray-900'
                     }`}>
                       {category.name}

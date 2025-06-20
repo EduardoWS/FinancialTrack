@@ -15,6 +15,7 @@ const RelatoriosScreen = () => {
   const isDark = theme === 'dark';
   const { width } = Dimensions.get('window');
   const isMobile = width < 768; // Definição de ponto de quebra para mobile
+  const isVeryNarrow = width < 400;
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
@@ -155,6 +156,8 @@ const RelatoriosScreen = () => {
         
         <View className="flex-1 ml-3">
           <Text className={`text-base font-medium leading-5 ${
+            isVeryNarrow ? 'text-sm' : 'text-base'
+          } ${
             isDark ? 'text-white' : 'text-gray-900'
           }`}>
             {item.title}

@@ -18,6 +18,7 @@ const MetasScreen = () => {
   const isDark = theme === 'dark';
   const { width } = Dimensions.get('window');
   const isMobile = width < 768;
+  const isVeryNarrow = width < 400;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [valorModalVisible, setValorModalVisible] = useState(false);
@@ -304,6 +305,7 @@ const MetasScreen = () => {
                 meta={meta}
                 progresso={calcularProgresso(meta.valorAtual, meta.valorMeta)}
                 onPress={() => handleMetaClick(meta)}
+                isVeryNarrow={isVeryNarrow}
               />
             ))
           )}
