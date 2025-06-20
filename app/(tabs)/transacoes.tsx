@@ -262,11 +262,13 @@ const TransacoesScreen = () => {
                 Categoria
               </Text>
             )}
-            <Text className={`text-sm font-medium w-24 text-center ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Data
-            </Text>
+            {!isMobile && (
+              <Text className={`text-sm font-medium w-24 text-center ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Data
+              </Text>
+            )}
             <Text className={`text-sm font-medium w-24 text-right ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>
@@ -333,13 +335,27 @@ const TransacoesScreen = () => {
                         {getTransactionIcon(transaction.type)}
                       </Text>
                     </View>
-                    <Text className={`
-                      font-medium flex-1
-                      ${isVeryNarrow ? 'text-sm' : ''}
-                      ${isDark ? 'text-white' : 'text-gray-900'}
-                    `}>
-                      {transaction.description}
-                    </Text>
+                    <View className="flex-1">
+                      <Text className={`
+                        font-medium flex-1
+                        ${isVeryNarrow ? 'text-sm' : ''}
+                        ${isDark ? 'text-white' : 'text-gray-900'}
+                      `}>
+                        {transaction.description}
+                      </Text>
+                      {isMobile && (
+                        <Text className={`
+                          text-xs
+                          ${isDark ? 'text-gray-400' : 'text-gray-500'}
+                        `}>
+                          {new Date(transaction.date).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: isVeryNarrow ? '2-digit' : 'numeric',
+                          })}
+                        </Text>
+                      )}
+                    </View>
                   </View>
 
                   {/* Categoria */}
@@ -360,18 +376,20 @@ const TransacoesScreen = () => {
                   )}
 
                   {/* Data */}
-                  <View className="w-24 items-center">
-                    <Text className={`
-                      text-sm
-                      ${isDark ? 'text-gray-400' : 'text-gray-600'}
-                    `}>
-                      {new Date(transaction.date).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: isVeryNarrow ? '2-digit' : 'numeric',
-                      })}
-                    </Text>
-                  </View>
+                  {!isMobile && (
+                    <View className="w-24 items-center">
+                      <Text className={`
+                        text-sm
+                        ${isDark ? 'text-gray-400' : 'text-gray-600'}
+                      `}>
+                        {new Date(transaction.date).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: isVeryNarrow ? '2-digit' : 'numeric',
+                        })}
+                      </Text>
+                    </View>
+                  )}
 
                   {/* Valor */}
                   <View className="w-24 items-end">
