@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Header from '../../components/Header';
 import ScreenLoader from '../../components/atoms/ScreenLoader';
 import { errorToast, successToast } from '../../components/atoms/custom-toasts';
@@ -12,6 +12,8 @@ import { Category } from '../../services/categoriasService';
 const CategoriasScreen = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { width } = Dimensions.get('window');
+  const isMobile = width < 768;
   
   // Estado inicial com categorias padrão
   const {
@@ -96,7 +98,10 @@ const CategoriasScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveTab(filter)}
         className={`
-          flex-1 py-2 px-2 rounded-lg border items-center mx-1
+          ${isMobile 
+            ? 'flex-1 py-2 px-2 rounded-lg border items-center mx-1'
+            : 'px-4 py-2 rounded-full border-2 min-w-[100px] items-center mr-3'
+          }
           ${isActive 
             ? (color === 'green' 
               ? (isDark ? 'bg-green-600 border-green-600' : 'bg-green-600 border-green-600')
@@ -107,7 +112,8 @@ const CategoriasScreen = () => {
         `}
       >
         <Text className={`
-          font-medium text-sm text-center
+          font-medium text-center
+          ${isMobile ? 'text-sm' : 'text-sm'}
           ${isActive 
             ? 'text-white' 
             : (isDark ? 'text-gray-300' : 'text-gray-700')
@@ -137,34 +143,67 @@ const CategoriasScreen = () => {
       <Header title="Categorias" />
       
       <View className="flex-1 p-4">
-        {/* Filtros e Botão Adicionar Categoria organizados verticalmente para mobile */}
-        <View className="mb-6">
-          <View className="flex-row mb-3">
-            <FilterButton 
-              filter="expense" 
-              label="Despesas" 
-              count={expenseCategories.length}
-              color="red"
-            />
-            <FilterButton 
-              filter="income" 
-              label="Receitas" 
-              count={incomeCategories.length}
-              color="green"
-            />
+        {isMobile ? (
+          // Layout para Mobile
+          <View className="mb-6">
+            <View className="flex-row mb-3">
+              <FilterButton 
+                filter="expense" 
+                label="Despesas" 
+                count={expenseCategories.length}
+                color="red"
+              />
+              <FilterButton 
+                filter="income" 
+                label="Receitas" 
+                count={incomeCategories.length}
+                color="green"
+              />
+            </View>
+            <TouchableOpacity
+              onPress={openAddModal}
+              className={`py-3 px-4 rounded-lg ${
+                activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
+              }`}
+            >
+              <Text className="text-white font-medium text-center">
+                Adicionar Nova Categoria
+              </Text>
+            </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity
-            onPress={openAddModal}
-            className={`py-3 px-4 rounded-lg ${
-              activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
-            }`}
-          >
-            <Text className="text-white font-medium text-center">
-              Adicionar Nova Categoria
-            </Text>
-          </TouchableOpacity>
-        </View>
+        ) : (
+          // Layout para Web (Desktop)
+          <View className="flex-row justify-between items-center mb-6">
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              className="flex-1"
+            >
+              <FilterButton 
+                filter="expense" 
+                label="Despesas" 
+                count={expenseCategories.length}
+                color="red"
+              />
+              <FilterButton 
+                filter="income" 
+                label="Receitas" 
+                count={incomeCategories.length}
+                color="green"
+              />
+            </ScrollView>
+            <TouchableOpacity
+              onPress={openAddModal}
+              className={`px-4 py-2 rounded-lg ml-3 ${
+                activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
+              }`}
+            >
+              <Text className="text-white font-medium text-sm">
+                + Categoria
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Lista de Categorias */}
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { errorToast, successToast } from '../../components/atoms/custom-toasts';
 import ScreenLoader from '../../components/atoms/ScreenLoader';
 import Header from '../../components/Header';
@@ -11,6 +11,9 @@ import { formatCurrency } from '../../services/transacoesService';
 const TransacoesScreen = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { width } = Dimensions.get('window');
+  const isMobile = width < 768;
+  const showCategory = width >= 500;
   
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -55,7 +58,10 @@ const TransacoesScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveFilter(filter)}
         className={`
-          flex-1 py-2 px-1 rounded-lg border items-center mx-1
+          ${isMobile 
+            ? 'flex-1 py-2 px-1 rounded-lg border items-center mx-1'
+            : 'px-4 py-2 rounded-full border-2 min-w-[100px] items-center'
+          }
           ${isActive 
             ? (isDark ? 'bg-blue-600 border-blue-600' : 'bg-blue-600 border-blue-600')
             : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
@@ -63,7 +69,8 @@ const TransacoesScreen = () => {
         `}
       >
         <Text className={`
-          font-medium text-xs text-center
+          font-medium text-center
+          ${isMobile ? 'text-xs' : 'text-sm'}
           ${isActive 
             ? 'text-white' 
             : (isDark ? 'text-gray-300' : 'text-gray-700')
@@ -155,35 +162,69 @@ const TransacoesScreen = () => {
       <Header title="Transações" />
       
       <View className="flex-1 p-4">
-        {/* Filtros e Botão Cadastrar organizados verticalmente para mobile */}
-        <View className="mb-6">
-          <View className="flex-row mb-3">
-            <FilterButton 
-              filter="all" 
-              label="Todas" 
-              count={transactions.length}
-            />
-            <FilterButton 
-              filter="income" 
-              label="Entradas" 
-              count={incomeTransactions.length}
-            />
-            <FilterButton 
-              filter="expense" 
-              label="Saídas" 
-              count={expenseTransactions.length}
-            />
+        {isMobile ? (
+          // Layout para Mobile
+          <View className="mb-6">
+            <View className="flex-row mb-3">
+              <FilterButton 
+                filter="all" 
+                label="Todas" 
+                count={transactions.length}
+              />
+              <FilterButton 
+                filter="income" 
+                label="Entradas" 
+                count={incomeTransactions.length}
+              />
+              <FilterButton 
+                filter="expense" 
+                label="Saídas" 
+                count={expenseTransactions.length}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              className="bg-blue-600 py-3 px-4 rounded-lg"
+            >
+              <Text className="text-white font-medium text-center">
+                Cadastrar Nova Transação
+              </Text>
+            </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity
-            onPress={() => setModalVisible(true)}
-            className="bg-blue-600 py-3 px-4 rounded-lg"
-          >
-            <Text className="text-white font-medium text-center">
-              Cadastrar Nova Transação
-            </Text>
-          </TouchableOpacity>
-        </View>
+        ) : (
+          // Layout para Web (Desktop)
+          <View className="mb-6 flex-row justify-between items-center">
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              className="flex-row space-x-3"
+            >
+              <FilterButton 
+                filter="all" 
+                label="Todas as transações" 
+                count={transactions.length}
+              />
+              <FilterButton 
+                filter="income" 
+                label="Entradas" 
+                count={incomeTransactions.length}
+              />
+              <FilterButton 
+                filter="expense" 
+                label="Saídas" 
+                count={expenseTransactions.length}
+              />
+            </ScrollView>
+            <View className="flex-1 items-end">
+              <TouchableOpacity
+                onPress={() => setModalVisible(true)}
+                className="bg-blue-600 px-4 py-2 rounded-lg"
+              >
+                <Text className="text-white font-medium">Cadastrar Transação</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Tabela de transações */}
         <View className={`
@@ -213,11 +254,13 @@ const TransacoesScreen = () => {
             }`}>
               Descrição
             </Text>
-            <Text className={`text-sm font-medium w-24 text-center ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Categoria
-            </Text>
+            {showCategory && (
+              <Text className={`text-sm font-medium w-24 text-center ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Categoria
+              </Text>
+            )}
             <Text className={`text-sm font-medium w-24 text-center ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>
@@ -298,19 +341,21 @@ const TransacoesScreen = () => {
                   </View>
 
                   {/* Categoria */}
-                  <View className="w-24 items-center">
-                    <View className={`
-                      px-2 py-1 rounded-full
-                      ${isDark ? 'bg-gray-700' : 'bg-gray-200'}
-                    `}>
-                      <Text className={`
-                        text-xs
-                        ${isDark ? 'text-gray-300' : 'text-gray-700'}
+                  {showCategory && (
+                    <View className="w-24 items-center">
+                      <View className={`
+                        px-2 py-1 rounded-full
+                        ${isDark ? 'bg-gray-700' : 'bg-gray-200'}
                       `}>
-                        {transaction.category}
-                      </Text>
+                        <Text className={`
+                          text-xs
+                          ${isDark ? 'text-gray-300' : 'text-gray-700'}
+                        `}>
+                          {transaction.category}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
+                  )}
 
                   {/* Data */}
                   <View className="w-24 items-center">

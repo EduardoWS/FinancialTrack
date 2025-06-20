@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Header from '../../components/Header';
 import ScreenLoader from '../../components/atoms/ScreenLoader';
 import { errorToast, successToast } from '../../components/atoms/custom-toasts';
@@ -16,6 +16,8 @@ import { Meta } from '../../services/metasService';
 const MetasScreen = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { width } = Dimensions.get('window');
+  const isMobile = width < 768;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [valorModalVisible, setValorModalVisible] = useState(false);
@@ -171,7 +173,10 @@ const MetasScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveTab(filter)}
         className={`
-          flex-1 py-2 px-2 rounded-lg border items-center mx-1
+          ${isMobile 
+            ? 'flex-1 py-2 px-2 rounded-lg border items-center mx-1'
+            : 'px-4 py-2 rounded-full border-2 min-w-[120px] items-center mr-3'
+          }
           ${
             isActive
               ? color === 'green'
@@ -189,7 +194,8 @@ const MetasScreen = () => {
       >
         <Text
           className={`
-          font-medium text-sm text-center
+          font-medium text-center
+          ${isMobile ? 'text-sm' : 'text-sm'}
           ${isActive ? 'text-white' : isDark ? 'text-gray-300' : 'text-gray-700'}
         `}
         >
@@ -224,31 +230,54 @@ const MetasScreen = () => {
       <Header title="Metas Financeiras" />
 
       <View className="flex-1 p-4">
-        <View className="mb-6">
-          <View className="flex-row mb-3">
-            <FilterButton
-              filter="ativas"
-              label="Metas Ativas"
-              count={metasAtivas.length}
-              color="blue"
-            />
-            <FilterButton
-              filter="finalizadas"
-              label="Metas Concluídas"
-              count={metasFinalizadas.length}
-              color="green"
-            />
+        {isMobile ? (
+          // Layout para Mobile
+          <View className="mb-6">
+            <View className="flex-row mb-3">
+              <FilterButton
+                filter="ativas"
+                label="Metas Ativas"
+                count={metasAtivas.length}
+                color="blue"
+              />
+              <FilterButton
+                filter="finalizadas"
+                label="Metas Concluídas"
+                count={metasFinalizadas.length}
+                color="green"
+              />
+            </View>
+            <TouchableOpacity 
+              onPress={() => setModalVisible(true)} 
+              className="bg-blue-600 py-3 px-4 rounded-lg"
+            >
+              <Text className="text-white font-medium text-center">
+                Criar Nova Meta
+              </Text>
+            </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity 
-            onPress={() => setModalVisible(true)} 
-            className="bg-blue-600 py-3 px-4 rounded-lg"
-          >
-            <Text className="text-white font-medium text-center">
-              Criar Nova Meta
-            </Text>
-          </TouchableOpacity>
-        </View>
+        ) : (
+          // Layout para Web (Desktop)
+          <View className="flex-row justify-between items-center mb-6">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
+              <FilterButton
+                filter="ativas"
+                label="Metas Ativas"
+                count={metasAtivas.length}
+                color="blue"
+              />
+              <FilterButton
+                filter="finalizadas"
+                label="Metas Concluídas"
+                count={metasFinalizadas.length}
+                color="green"
+              />
+            </ScrollView>
+            <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-blue-600 px-4 py-2 rounded-lg ml-3">
+              <Text className="text-white font-medium text-sm">Criar Meta</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {metasExibidas.length === 0 ? (
