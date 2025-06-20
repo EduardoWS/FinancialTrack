@@ -1,13 +1,12 @@
-import { auth } from './firebaseConfig'; 
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { 
-  User,
-  createUserWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
   signOut,
   updateProfile
 } from 'firebase/auth';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { auth } from '../firebase/firebaseConfig';
 
 // A interface do usuário pode ser a do próprio Firebase, que já tem 'email', 'displayName', 'uid', etc.
 // Mas podemos criar uma mais simples para o nosso contexto.

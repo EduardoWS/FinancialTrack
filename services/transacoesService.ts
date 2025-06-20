@@ -11,7 +11,7 @@ import {
   updateDoc,
   where
 } from 'firebase/firestore';
-import { auth, db } from './firebaseConfig';
+import { auth, db } from '../firebase/firebaseConfig';
 
 // Interface para transação
 export interface Transaction {

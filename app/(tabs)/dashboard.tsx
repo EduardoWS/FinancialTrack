@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { RefreshControl, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import Card from '../../components/atoms/Card';
 import ScreenLoader from '../../components/atoms/ScreenLoader';
@@ -6,17 +6,46 @@ import Header from '../../components/Header';
 import BalanceHistoryChart from '../../components/molecules/BalanceHistoryChart';
 import CategoryExpensesChart from '../../components/molecules/CategoryExpensesChart';
 import RecentTransactions from '../../components/molecules/RecentTransactions';
-import WeeklyActivityChart from '../../components/molecules/WeeklyActivityChart';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useScreenSize } from '../../hooks/useScreenSize';
 import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
+import MonthlyActivityChart from '../../components/molecules/MonthlyActivityChart';
 
 const DashboardScreen = () => {
   const { theme } = useTheme();
   const { isMobile } = useScreenSize();
   const { data, loading, error, refetch } = useDashboardData();
   const isDark = theme === 'dark';
+
+  // Dados de receita/despesa dos últimos 6 meses
+  const monthlyActivity = useMemo(() => {
+    if (!data?.allTransactions) return null;
+
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const now = new Date();
+
+    return Array.from({ length: 6 }).map((_, idx) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (5 - idx), 1);
+      const monthIndex = date.getMonth();
+      const label = months[monthIndex];
+
+      const monthTransactions = data.allTransactions.filter(t => {
+        const tDate = t.date instanceof Date ? t.date : new Date(t.date);
+        return tDate.getMonth() === monthIndex && tDate.getFullYear() === date.getFullYear();
+      });
+
+      const income = monthTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+      const expense = monthTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+      return { month: label, income, expense };
+    });
+  }, [data?.allTransactions]);
 
   // Componente de loading
   if (loading && !data) {
@@ -122,18 +151,18 @@ const DashboardScreen = () => {
           <View className={`${isMobile ? '' : 'flex-row space-x-4 mb-6'}`}>
             {/* Atividade Semanal */}
             <View className={`${isMobile ? 'w-full mb-6' : 'flex-1'}`}>
-              {data?.weeklyActivity && (
-                <WeeklyActivityChart data={data.weeklyActivity} />
+              {monthlyActivity && (
+                <MonthlyActivityChart data={monthlyActivity} />
               )}
             </View>
 
             {/* Últimas Transações */}
-            <View className={`${isMobile ? 'w-full mb-6' : 'flex-1'}`}>
+            <View className={`${isMobile ? 'w-full mb-6 h-full' : 'flex-1'}`}>
               {data?.recentTransactions && data?.allTransactions && (
                 <RecentTransactions 
                   transactions={data.recentTransactions} 
                   allTransactions={data.allTransactions}
-                  maxTransactions={4}
+                  maxTransactions={isMobile ? 3 : 4}
                 />
               )}
             </View>

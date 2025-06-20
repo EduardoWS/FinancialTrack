@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
-import { BalanceHistory } from '../../data/mockData';
 import { useScreenSize } from '../../hooks/useScreenSize';
 import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
 import Card from '../atoms/Card';
+
+interface BalanceHistory {
+  month: string;
+  balance: number;
+}
 
 interface BalanceHistoryChartProps {
   data: BalanceHistory[];

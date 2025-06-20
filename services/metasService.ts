@@ -7,7 +7,7 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
-import { auth, db } from './firebaseConfig';
+import { auth, db } from '../firebase/firebaseConfig';
 
 export interface Meta {
   id: string;

@@ -16,7 +16,7 @@ interface RecentTransactionsProps {
 const RecentTransactions: React.FC<RecentTransactionsProps> = ({ 
   transactions, 
   allTransactions,
-  maxTransactions = 4 // Valor padrão
+  maxTransactions = 3 // Valor padrão
 }) => {
   const { theme } = useTheme();
   const { isMobile } = useScreenSize();
@@ -45,7 +45,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 
   // Transações recentes do mês corrente (limitadas)
   const recentCurrentMonthTransactions = useMemo(() => {
-    const limit = isMobile ? 4 : maxTransactions;
+    const limit = isMobile ? 3 : maxTransactions;
     return currentMonthTransactions.slice(0, limit);
   }, [currentMonthTransactions, isMobile, maxTransactions]);
 

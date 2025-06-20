@@ -4,11 +4,9 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  query,
-  updateDoc,
-  where,
+  updateDoc
 } from 'firebase/firestore';
-import { auth, db } from './firebaseConfig'; // Importamos o db e o auth
+import { auth, db } from '../firebase/firebaseConfig'; // Importamos o db e o auth
 
 // Interface para categoria (pode manter a sua)
 export interface Category {
