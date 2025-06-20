@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { Transaction } from '../../data/mockData';
 import { useTheme } from '../../services/ThemeContext';
+import { Transaction } from '../../services/transacoesService';
 
 interface NewTransaction {
   description: string;

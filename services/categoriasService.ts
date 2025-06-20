@@ -18,6 +18,9 @@ export interface Category {
   color: string;
   icon: string;
   isDefault?: boolean;
+  percentage?: number;
+  transactionCount?: number;
+  totalAmount?: number;
 }
 
 // Função auxiliar para obter a referência da coleção de categorias do usuário logado
@@ -87,5 +90,3 @@ export const validateCategoryName = (name: string, type: 'income' | 'expense', e
   return null;
 };
 
-// Cores e ícones disponíveis (pode manter como estava)
-export { availableColors, availableIcons } from '../data/mockCategorias'; // Supondo que você queira manter este arquivo

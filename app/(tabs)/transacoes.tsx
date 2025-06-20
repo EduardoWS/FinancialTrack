@@ -1,22 +1,24 @@
 import React, { useState } from "react";
 import { RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import Toast from '../../components/atoms/Toast';
+import { errorToast, successToast } from '../../components/atoms/custom-toasts';
+import ScreenLoader from '../../components/atoms/ScreenLoader';
 import Header from '../../components/Header';
 import AddTransactionModal from '../../components/molecules/AddTransactionModal';
 import { FilterType, useTransactions } from '../../hooks/useTransactions';
-import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
+import { formatCurrency } from '../../services/transacoesService';
 
 const TransacoesScreen = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
   const [modalVisible, setModalVisible] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
 
   // Hook customizado para gerenciar transações
   const {
     transactions,
+    incomeTransactions,
+    expenseTransactions,
     filteredTransactions,
     activeFilter,
     currentPage,
@@ -26,7 +28,7 @@ const TransacoesScreen = () => {
     error,
     setActiveFilter,
     setCurrentPage,
-    addTransaction,
+    adicionarTransacao,
     refreshTransactions
   } = useTransactions(5);
 
@@ -113,6 +115,21 @@ const TransacoesScreen = () => {
     </TouchableOpacity>
   );
 
+  const handleAddTransaction = async (transactionData: any) => {
+    try {
+      await adicionarTransacao(transactionData);
+      successToast('Transação adicionada com sucesso!');
+      setModalVisible(false);
+    } catch (err: any) {
+      errorToast('Erro ao adicionar transação', err.message);
+    }
+  };
+
+  // Componente de carregamento
+  if (loading) {
+    return <ScreenLoader title="Transações" text="Carregando transações..." />;
+  }
+
   // Componente de erro
   if (error && !loading) {
     return (
@@ -154,12 +171,12 @@ const TransacoesScreen = () => {
             <FilterButton 
               filter="income" 
               label="Entradas" 
-              count={transactions.filter(t => t.type === 'income').length}
+              count={incomeTransactions.length}
             />
             <FilterButton 
               filter="expense" 
               label="Saídas" 
-              count={transactions.filter(t => t.type === 'expense').length}
+              count={expenseTransactions.length}
             />
           </ScrollView>
           <View className="flex-1 items-end">
@@ -230,8 +247,32 @@ const TransacoesScreen = () => {
               />
             }
           >
-            <View className="space-y-2">
-              {paginatedTransactions.map((transaction) => (
+            {paginatedTransactions.length === 0 ? (
+              <View className="flex-1 justify-center items-center p-8">
+                <Text className="text-6xl mb-4">
+                  {activeFilter === 'income' ? '💰' : activeFilter === 'expense' ? '💸' : '📊'}
+                </Text>
+                <Text className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Nenhuma transação encontrada
+                </Text>
+                <Text className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {activeFilter === 'all' 
+                    ? 'Adicione sua primeira transação para começar a acompanhar suas finanças!'
+                    : `Nenhuma ${activeFilter === 'income' ? 'entrada' : 'saída'} encontrada`
+                  }
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setModalVisible(true)}
+                  className="bg-blue-600 px-6 py-3 rounded-lg mt-4"
+                >
+                  <Text className="text-white font-medium">
+                    Adicionar Transação
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="space-y-2">
+                {paginatedTransactions.map((transaction) => (
                 <View 
                   key={transaction.id}
                   className={`
@@ -281,7 +322,7 @@ const TransacoesScreen = () => {
                       text-sm
                       ${isDark ? 'text-gray-400' : 'text-gray-600'}
                     `}>
-                      {transaction.date}
+                      {new Date(transaction.date).toLocaleDateString('pt-BR')}
                     </Text>
                   </View>
 
@@ -296,8 +337,9 @@ const TransacoesScreen = () => {
                     </Text>
                   </View>
                 </View>
-              ))}
-            </View>
+                              ))}
+              </View>
+            )}
           </ScrollView>
         </View>
 
@@ -374,19 +416,8 @@ const TransacoesScreen = () => {
       <AddTransactionModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onAdd={(transaction) => {
-          addTransaction(transaction);
-          setModalVisible(false);
-          setToastVisible(true);
-        }}
+        onAdd={handleAddTransaction}
       />
-            {/* Toast de sucesso */}
-        <Toast
-          message="Transação adicionada com sucesso!"
-          type="success"
-          visible={toastVisible}
-          onHide={() => setToastVisible(false)}
-        />
       </SafeAreaView>
     );
   };

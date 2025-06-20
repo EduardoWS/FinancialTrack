@@ -1,28 +1,44 @@
-import { Transaction } from '../data/mockData';
-import { mockTransacoesData } from '../data/mockTransacoes';
-import { APP_CONFIG } from './config';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  Timestamp,
+  updateDoc,
+  where
+} from 'firebase/firestore';
+import { auth, db } from './firebaseConfig';
 
-// Interface para os dados das transações
-export interface TransacoesData {
-  transactions: Transaction[];
-  recentTransactions: Transaction[];
-  incomeTransactions: Transaction[];
-  expenseTransactions: Transaction[];
-  estatisticas: {
-    totalTransactions: number;
-    totalIncome: number;
-    totalExpenses: number;
-    balance: number;
-    averageIncome: number;
-    averageExpense: number;
-    transactionsThisMonth: number;
-  };
+// Interface para transação
+export interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+  date: Date | string; // Aceita tanto Date quanto string
+  category: string;
+  categoryId?: string; // Para referenciar categorias do Firebase
+}
+
+// Interface para dados do Firestore, com Timestamps
+interface TransactionFirestore {
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+  date: Timestamp;
+  category: string;
+  categoryId?: string;
 }
 
 // Interface para filtros de transação
 export interface TransactionFilters {
   type?: 'income' | 'expense' | 'all';
   category?: string;
+  categoryId?: string;
   dateFrom?: Date;
   dateTo?: Date;
   amountMin?: number;
@@ -42,25 +58,99 @@ export interface SortOptions {
   order: 'asc' | 'desc';
 }
 
-// Simula delay de rede
-const simulateNetworkDelay = () => 
-  new Promise(resolve => setTimeout(resolve, APP_CONFIG.MOCK_DELAY));
+// Interface para estatísticas
+export interface TransactionStats {
+  totalTransactions: number;
+  totalIncome: number;
+  totalExpenses: number;
+  balance: number;
+  averageIncome: number;
+  averageExpense: number;
+  transactionsThisMonth: number;
+}
 
-// Função para buscar dados das transações
-export const fetchTransacoesData = async (): Promise<TransacoesData> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/transacoes`);
-      const transactions = await response.json();
-      return processTransacoesData(transactions);
-    } catch (error) {
-      console.error('Erro ao buscar transações da API:', error);
-      return processTransacoesData(mockTransacoesData);
+// Interface para dados das transações processadas
+export interface TransacoesData {
+  transactions: Transaction[];
+  recentTransactions: Transaction[];
+  incomeTransactions: Transaction[];
+  expenseTransactions: Transaction[];
+  estatisticas: TransactionStats;
+}
+
+// Função auxiliar para obter a referência da coleção de transações do usuário logado
+const getTransactionsCollectionRef = () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Usuário não autenticado para acessar transações.');
+  return collection(db, 'users', user.uid, 'transactions');
+};
+
+// Função para converter do Firestore para Transaction
+const fromFirestore = (doc: any): Transaction => {
+  const data = doc.data() as TransactionFirestore;
+  return {
+    id: doc.id,
+    ...data,
+    date: data.date.toDate(),
+  };
+};
+
+// Função para converter Transaction para dados do Firestore
+const toFirestore = (transaction: Partial<Omit<Transaction, 'id'>>) => {
+  const data = { ...transaction };
+
+  // Remove campos undefined
+  Object.keys(data).forEach(key => {
+    if ((data as any)[key] === undefined) {
+      delete (data as any)[key];
     }
-  } else {
-    await simulateNetworkDelay();
-    return processTransacoesData(mockTransacoesData);
+  });
+
+  // Converte data para Timestamp do Firestore
+  if (data.date) {
+    let dateObj: Date;
+    
+    if (data.date instanceof Date) {
+      dateObj = data.date;
+    } else {
+      // Converte string para Date
+      const dateStr = String(data.date);
+      if (dateStr.includes('/')) {
+        // Formato brasileiro DD/MM/YYYY
+        const [day, month, year] = dateStr.split('/');
+        dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        // Outros formatos, deixa o Date constructor tentar converter
+        dateObj = new Date(dateStr);
+      }
+    }
+    
+    // Verifica se a data é válida
+    if (isNaN(dateObj.getTime())) {
+      dateObj = new Date(); // Fallback para data atual
+    }
+    
+    (data as any).date = Timestamp.fromDate(dateObj);
   }
+
+  return data;
+};
+
+// --- FUNÇÕES CRUD COM FIRESTORE ---
+
+// Função para buscar todas as transações do usuário
+export const fetchUserTransactions = async (): Promise<Transaction[]> => {
+  const transactionsCollectionRef = getTransactionsCollectionRef();
+  const q = query(transactionsCollectionRef, orderBy('date', 'desc'));
+  const querySnapshot = await getDocs(q);
+
+  return querySnapshot.docs.map(fromFirestore);
+};
+
+// Função para buscar dados processados das transações
+export const fetchTransacoesData = async (): Promise<TransacoesData> => {
+  const transactions = await fetchUserTransactions();
+  return processTransacoesData(transactions);
 };
 
 // Função para processar dados das transações
@@ -69,27 +159,37 @@ const processTransacoesData = (transactions: Transaction[]): TransacoesData => {
   const expenseTransactions = transactions.filter(t => t.type === 'expense');
   const recentTransactions = transactions.slice(0, 10);
 
+  // Transações do mês atual
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const currentMonthTransactions = transactions.filter(t => {
+    const transactionDate = new Date(t.date);
+    return transactionDate.getMonth() === currentMonth && 
+           transactionDate.getFullYear() === currentYear;
+  });
+
+  const currentMonthIncome = currentMonthTransactions
+    .filter(t => t.type === 'income')
+    .reduce((acc, t) => acc + t.amount, 0);
+  
+  const currentMonthExpenses = Math.abs(currentMonthTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((acc, t) => acc + t.amount, 0));
+
+  // Totais gerais (para o saldo total)
   const totalIncome = incomeTransactions.reduce((acc, t) => acc + t.amount, 0);
   const totalExpenses = Math.abs(expenseTransactions.reduce((acc, t) => acc + t.amount, 0));
   const balance = totalIncome - totalExpenses;
 
-  // Transações do mês atual
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  const transactionsThisMonth = transactions.filter(t => {
-    const transactionDate = new Date(t.date);
-    return transactionDate.getMonth() === currentMonth && 
-           transactionDate.getFullYear() === currentYear;
-  }).length;
-
-  const estatisticas = {
+  const estatisticas: TransactionStats = {
     totalTransactions: transactions.length,
-    totalIncome,
-    totalExpenses,
+    totalIncome: currentMonthIncome, // Usar receitas do mês atual
+    totalExpenses: currentMonthExpenses, // Usar gastos do mês atual
     balance,
     averageIncome: incomeTransactions.length > 0 ? totalIncome / incomeTransactions.length : 0,
     averageExpense: expenseTransactions.length > 0 ? totalExpenses / expenseTransactions.length : 0,
-    transactionsThisMonth
+    transactionsThisMonth: currentMonthTransactions.length // Corrigir esta linha
   };
 
   return {
@@ -101,7 +201,38 @@ const processTransacoesData = (transactions: Transaction[]): TransacoesData => {
   };
 };
 
-// Função para buscar transações com filtros e paginação
+// Função para criar nova transação
+export const createTransaction = async (transactionData: Omit<Transaction, 'id'>): Promise<Transaction> => {
+  const transactionsCollectionRef = getTransactionsCollectionRef();
+  const firestoreData = toFirestore(transactionData);
+  const docRef = await addDoc(transactionsCollectionRef, firestoreData);
+
+  return {
+    id: docRef.id,
+    ...transactionData,
+  };
+};
+
+// Função para atualizar transação
+export const updateTransaction = async (id: string, transactionData: Partial<Omit<Transaction, 'id'>>): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Usuário não autenticado.');
+  
+  const transactionDocRef = doc(db, 'users', user.uid, 'transactions', id);
+  const firestoreData = toFirestore(transactionData);
+  await updateDoc(transactionDocRef, firestoreData);
+};
+
+// Função para excluir transação
+export const deleteTransaction = async (id: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  const transactionDocRef = doc(db, 'users', user.uid, 'transactions', id);
+  await deleteDoc(transactionDocRef);
+};
+
+// Função para buscar transações com filtros
 export const fetchTransactionsWithFilters = async (
   filters?: TransactionFilters,
   pagination?: PaginationOptions,
@@ -111,62 +242,45 @@ export const fetchTransactionsWithFilters = async (
   totalCount: number;
   hasMore: boolean;
 }> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const queryParams = new URLSearchParams();
-      
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            queryParams.append(key, value.toString());
-          }
-        });
-      }
-      
-      if (pagination) {
-        queryParams.append('page', pagination.page.toString());
-        queryParams.append('limit', pagination.limit.toString());
-      }
-      
-      if (sort) {
-        queryParams.append('sortBy', sort.field);
-        queryParams.append('sortOrder', sort.order);
-      }
-
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/transacoes?${queryParams}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Erro ao buscar transações filtradas:', error);
-      return applyFiltersToMockData(filters, pagination, sort);
-    }
-  } else {
-    await simulateNetworkDelay();
-    return applyFiltersToMockData(filters, pagination, sort);
-  }
-};
-
-// Função para aplicar filtros aos dados mock
-const applyFiltersToMockData = (
-  filters?: TransactionFilters,
-  pagination?: PaginationOptions,
-  sort?: SortOptions
-): {
-  transactions: Transaction[];
-  totalCount: number;
-  hasMore: boolean;
-} => {
-  let filteredTransactions = [...mockTransacoesData];
+  const transactionsCollectionRef = getTransactionsCollectionRef();
+  let q = query(transactionsCollectionRef);
 
   // Aplicar filtros
   if (filters) {
     if (filters.type && filters.type !== 'all') {
-      filteredTransactions = filteredTransactions.filter(t => t.type === filters.type);
+      q = query(q, where('type', '==', filters.type));
+    }
+    if (filters.categoryId) {
+      q = query(q, where('categoryId', '==', filters.categoryId));
     }
     if (filters.category) {
-      filteredTransactions = filteredTransactions.filter(t => 
-        t.category.toLowerCase().includes(filters.category!.toLowerCase())
-      );
+      q = query(q, where('category', '==', filters.category));
     }
+    if (filters.dateFrom) {
+      q = query(q, where('date', '>=', Timestamp.fromDate(filters.dateFrom)));
+    }
+    if (filters.dateTo) {
+      q = query(q, where('date', '<=', Timestamp.fromDate(filters.dateTo)));
+    }
+  }
+
+  // Aplicar ordenação
+  const sortField = sort?.field || 'date';
+  const sortOrder = sort?.order || 'desc';
+  q = query(q, orderBy(sortField, sortOrder));
+
+  // Aplicar paginação
+  if (pagination) {
+    q = query(q, limit(pagination.limit));
+    // Para paginação mais avançada, seria necessário implementar cursor-based pagination
+  }
+
+  const querySnapshot = await getDocs(q);
+  const transactions = querySnapshot.docs.map(fromFirestore);
+
+  // Aplicar filtros que não podem ser feitos no Firestore
+  let filteredTransactions = transactions;
+  if (filters) {
     if (filters.description) {
       filteredTransactions = filteredTransactions.filter(t => 
         t.description.toLowerCase().includes(filters.description!.toLowerCase())
@@ -184,126 +298,27 @@ const applyFiltersToMockData = (
     }
   }
 
-  // Aplicar ordenação
-  if (sort) {
-    filteredTransactions.sort((a, b) => {
-      let comparison = 0;
-      switch (sort.field) {
-        case 'amount':
-          comparison = Math.abs(a.amount) - Math.abs(b.amount);
-          break;
-        case 'description':
-          comparison = a.description.localeCompare(b.description);
-          break;
-        case 'category':
-          comparison = a.category.localeCompare(b.category);
-          break;
-        case 'date':
-        default:
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-          break;
-      }
-      return sort.order === 'desc' ? -comparison : comparison;
-    });
-  }
-
-  const totalCount = filteredTransactions.length;
-
-  // Aplicar paginação
-  if (pagination) {
-    const startIndex = (pagination.page - 1) * pagination.limit;
-    const endIndex = startIndex + pagination.limit;
-    filteredTransactions = filteredTransactions.slice(startIndex, endIndex);
-  }
-
   return {
     transactions: filteredTransactions,
-    totalCount,
-    hasMore: pagination ? (pagination.page * pagination.limit) < totalCount : false
+    totalCount: filteredTransactions.length,
+    hasMore: false, // Simplified for now
   };
 };
 
-// Função para criar nova transação
-export const createTransaction = async (transactionData: Omit<Transaction, 'id'>): Promise<Transaction> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/transacoes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(transactionData)
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('Erro ao criar transação:', error);
-      throw error;
-    }
-  } else {
-    await simulateNetworkDelay();
-    const newTransaction: Transaction = {
-      ...transactionData,
-      id: Date.now().toString()
-    };
-    return newTransaction;
-  }
-};
-
-// Função para atualizar transação
-export const updateTransaction = async (id: string, transactionData: Partial<Transaction>): Promise<Transaction> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/transacoes/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(transactionData)
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('Erro ao atualizar transação:', error);
-      throw error;
-    }
-  } else {
-    await simulateNetworkDelay();
-    return { ...transactionData, id } as Transaction;
-  }
-};
-
-// Função para excluir transação
-export const deleteTransaction = async (id: string): Promise<void> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      await fetch(`${APP_CONFIG.API_BASE_URL}/transacoes/${id}`, {
-        method: 'DELETE'
-      });
-    } catch (error) {
-      console.error('Erro ao excluir transação:', error);
-      throw error;
-    }
-  } else {
-    await simulateNetworkDelay();
-  }
-};
-
 // Função para buscar transações recentes
-export const fetchRecentTransactions = async (limit: number = 5): Promise<Transaction[]> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}/transacoes/recent?limit=${limit}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Erro ao buscar transações recentes:', error);
-      return mockTransacoesData.slice(0, limit);
-    }
-  } else {
-    await simulateNetworkDelay();
-    return mockTransacoesData.slice(0, limit);
-  }
+export const fetchRecentTransactions = async (limitCount: number = 5): Promise<Transaction[]> => {
+  const transactionsCollectionRef = getTransactionsCollectionRef();
+  const q = query(
+    transactionsCollectionRef, 
+    orderBy('date', 'desc'), 
+    limit(limitCount)
+  );
+  const querySnapshot = await getDocs(q);
+  
+  return querySnapshot.docs.map(fromFirestore);
 };
 
-// Função para buscar estatísticas por período
+// Função para obter estatísticas por período
 export const getTransactionStatsByPeriod = async (
   startDate: Date, 
   endDate: Date
@@ -314,87 +329,79 @@ export const getTransactionStatsByPeriod = async (
   transactionCount: number;
   topCategories: { category: string; amount: number; count: number }[];
 }> => {
-  if (APP_CONFIG.USE_API) {
-    try {
-      const response = await fetch(
-        `${APP_CONFIG.API_BASE_URL}/transacoes/stats?start=${startDate.toISOString()}&end=${endDate.toISOString()}`
-      );
-      return await response.json();
-    } catch (error) {
-      console.error('Erro ao buscar estatísticas por período:', error);
-      throw error;
+  const transactionsCollectionRef = getTransactionsCollectionRef();
+  const q = query(
+    transactionsCollectionRef,
+    where('date', '>=', Timestamp.fromDate(startDate)),
+    where('date', '<=', Timestamp.fromDate(endDate)),
+    orderBy('date', 'desc')
+  );
+
+  const querySnapshot = await getDocs(q);
+  const transactions = querySnapshot.docs.map(fromFirestore);
+
+  const incomeTransactions = transactions.filter(t => t.type === 'income');
+  const expenseTransactions = transactions.filter(t => t.type === 'expense');
+
+  const totalIncome = incomeTransactions.reduce((acc, t) => acc + t.amount, 0);
+  const totalExpenses = Math.abs(expenseTransactions.reduce((acc, t) => acc + t.amount, 0));
+
+  // Agrupar por categoria
+  const categoryStats = new Map<string, { amount: number; count: number }>();
+  transactions.forEach(t => {
+    if (!categoryStats.has(t.category)) {
+      categoryStats.set(t.category, { amount: 0, count: 0 });
     }
-  } else {
-    await simulateNetworkDelay();
-    
-    // Mock de estatísticas por período
-    const filteredTransactions = mockTransacoesData.filter(t => {
-      const transactionDate = new Date(t.date);
-      return transactionDate >= startDate && transactionDate <= endDate;
-    });
+    const stats = categoryStats.get(t.category)!;
+    stats.amount += Math.abs(t.amount);
+    stats.count += 1;
+  });
 
-    const incomeTransactions = filteredTransactions.filter(t => t.type === 'income');
-    const expenseTransactions = filteredTransactions.filter(t => t.type === 'expense');
+  const topCategories = Array.from(categoryStats.entries())
+    .map(([category, stats]) => ({ category, ...stats }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
 
-    const totalIncome = incomeTransactions.reduce((acc, t) => acc + t.amount, 0);
-    const totalExpenses = Math.abs(expenseTransactions.reduce((acc, t) => acc + t.amount, 0));
-
-    // Top categorias
-    const categoryStats = new Map<string, { amount: number; count: number }>();
-    filteredTransactions.forEach(t => {
-      const existing = categoryStats.get(t.category) || { amount: 0, count: 0 };
-      categoryStats.set(t.category, {
-        amount: existing.amount + Math.abs(t.amount),
-        count: existing.count + 1
-      });
-    });
-
-    const topCategories = Array.from(categoryStats.entries())
-      .map(([category, stats]) => ({ category, ...stats }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
-
-    return {
-      totalIncome,
-      totalExpenses,
-      balance: totalIncome - totalExpenses,
-      transactionCount: filteredTransactions.length,
-      topCategories
-    };
-  }
-};
-
-// Função para formatar valores monetários
-export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value);
+  return {
+    totalIncome,
+    totalExpenses,
+    balance: totalIncome - totalExpenses,
+    transactionCount: transactions.length,
+    topCategories,
+  };
 };
 
 // Função para validar dados da transação
 export const validateTransactionData = (data: Partial<Transaction>): string[] => {
   const errors: string[] = [];
 
-  if (!data.description?.trim()) {
+  if (!data.description || data.description.trim().length === 0) {
     errors.push('Descrição é obrigatória');
   }
 
   if (!data.amount || data.amount === 0) {
-    errors.push('Valor deve ser maior que zero');
+    errors.push('Valor deve ser diferente de zero');
   }
 
-  if (!data.category?.trim()) {
+  if (!data.type || !['income', 'expense'].includes(data.type)) {
+    errors.push('Tipo deve ser receita ou despesa');
+  }
+
+  if (!data.category || data.category.trim().length === 0) {
     errors.push('Categoria é obrigatória');
   }
 
-  if (!data.type) {
-    errors.push('Tipo da transação é obrigatório');
-  }
-
-  if (!data.date?.trim()) {
+  if (!data.date) {
     errors.push('Data é obrigatória');
   }
 
   return errors;
+};
+
+// Função para formatar moeda
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
 }; 

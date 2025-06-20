@@ -1,8 +1,8 @@
 import React from 'react';
 import { Dimensions, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { Transaction } from '../../data/mockData';
 import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
+import { Transaction } from '../../services/transacoesService';
 
 interface TransactionsModalProps {
   visible: boolean;
@@ -19,6 +19,9 @@ const TransactionsModal: React.FC<TransactionsModalProps> = ({
   const isDark = theme === 'dark';
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
+
+  // Nome do mês atual
+  const currentMonthName = new Date().toLocaleDateString('pt-BR', { month: 'long' });
 
   const getAmountColor = (type: 'income' | 'expense') => {
     return type === 'income' ? 'text-green-600' : 'text-red-600';
@@ -56,7 +59,7 @@ const TransactionsModal: React.FC<TransactionsModalProps> = ({
             <Text className={`text-xl font-bold ${
               isDark ? 'text-white' : 'text-gray-900'
             }`}>
-              Todas as Transações
+              Transações de {currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1)}
             </Text>
             <TouchableOpacity
               onPress={onClose}
@@ -79,60 +82,70 @@ const TransactionsModal: React.FC<TransactionsModalProps> = ({
             showsVerticalScrollIndicator={false}
             style={{ maxHeight: screenHeight * 0.8 - 160 }}
           >
-            <View className="space-y-3">
-              {transactions.map((transaction) => (
-                <View 
-                  key={transaction.id}
-                  className={`
-                    flex-row items-center justify-between p-4 rounded-xl
-                    ${isDark ? 'bg-gray-750' : 'bg-gray-50'}
-                  `}
-                >
-                  {/* Ícone e informações */}
-                  <View className="flex-row items-center flex-1">
-                    {/* Ícone da transação */}
-                    <View className={`
-                      w-12 h-12 rounded-full items-center justify-center mr-4
-                      ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'}
-                    `}>
-                      <Text className={`
-                        text-xl font-bold
-                        ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}
+            {transactions.length > 0 ? (
+              <View className="space-y-3">
+                {transactions.map((transaction) => (
+                  <View 
+                    key={transaction.id}
+                    className={`
+                      flex-row items-center justify-between p-4 rounded-xl
+                      ${isDark ? 'bg-gray-750' : 'bg-gray-50'}
+                    `}
+                  >
+                    {/* Ícone e informações */}
+                    <View className="flex-row items-center flex-1">
+                      {/* Ícone da transação */}
+                      <View className={`
+                        w-12 h-12 rounded-full items-center justify-center mr-4
+                        ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'}
                       `}>
-                        {getTransactionIcon(transaction.type)}
-                      </Text>
+                        <Text className={`
+                          text-xl font-bold
+                          ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}
+                        `}>
+                          {getTransactionIcon(transaction.type)}
+                        </Text>
+                      </View>
+
+                      {/* Informações da transação */}
+                      <View className="flex-1">
+                        <Text className={`
+                          font-semibold text-base
+                          ${isDark ? 'text-white' : 'text-gray-900'}
+                        `}>
+                          {transaction.description}
+                        </Text>
+                        <Text className={`
+                          text-sm mt-1
+                          ${isDark ? 'text-gray-400' : 'text-gray-500'}
+                        `}>
+                          {typeof transaction.date === 'string' ? transaction.date : transaction.date.toLocaleDateString('pt-BR')} • {transaction.category}
+                        </Text>
+                      </View>
                     </View>
 
-                    {/* Informações da transação */}
-                    <View className="flex-1">
+                    {/* Valor */}
+                    <View className="items-end">
                       <Text className={`
-                        font-semibold text-base
-                        ${isDark ? 'text-white' : 'text-gray-900'}
+                        font-bold text-lg
+                        ${getAmountColor(transaction.type)}
                       `}>
-                        {transaction.description}
-                      </Text>
-                      <Text className={`
-                        text-sm mt-1
-                        ${isDark ? 'text-gray-400' : 'text-gray-500'}
-                      `}>
-                        {transaction.date} • {transaction.category}
+                        {transaction.type === 'income' ? '+' : ''}
+                        {formatCurrency(Math.abs(transaction.amount))}
                       </Text>
                     </View>
                   </View>
-
-                  {/* Valor */}
-                  <View className="items-end">
-                    <Text className={`
-                      font-bold text-lg
-                      ${getAmountColor(transaction.type)}
-                    `}>
-                      {transaction.type === 'income' ? '+' : ''}
-                      {formatCurrency(Math.abs(transaction.amount))}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            ) : (
+              <View className="flex-1 items-center justify-center py-12">
+                <Text className={`text-center text-lg ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Nenhuma transação encontrada para {currentMonthName}
+                </Text>
+              </View>
+            )}
 
             {/* Espaçamento inferior */}
             <View className="h-4" />

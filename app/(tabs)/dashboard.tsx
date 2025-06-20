@@ -94,7 +94,7 @@ const DashboardScreen = () => {
                   <Text className={`text-sm font-medium ${
                     isDark ? 'text-gray-400' : 'text-gray-600'
                   }`}>
-                    Receitas
+                    Receitas do Mês
                   </Text>
                   <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold mt-1 text-green-600`}>
                     {formatCurrency(data?.stats.monthlyIncome || 0)}
@@ -108,7 +108,7 @@ const DashboardScreen = () => {
                   <Text className={`text-sm font-medium ${
                     isDark ? 'text-gray-400' : 'text-gray-600'
                   }`}>
-                    Gastos
+                    Gastos do Mês
                   </Text>
                   <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold mt-1 text-red-600`}>
                     {formatCurrency(data?.stats.monthlyExpenses || 0)}
@@ -133,6 +133,7 @@ const DashboardScreen = () => {
                 <RecentTransactions 
                   transactions={data.recentTransactions} 
                   allTransactions={data.allTransactions}
+                  maxTransactions={4}
                 />
               )}
             </View>

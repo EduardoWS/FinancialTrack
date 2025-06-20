@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
-import { CategoryExpense } from '../../data/mockData';
 import { useScreenSize } from '../../hooks/useScreenSize';
+import { CategoryExpense } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
 import Card from '../atoms/Card';
 
@@ -16,17 +16,27 @@ const CategoryExpensesChart: React.FC<CategoryExpensesChartProps> = ({ data }) =
   const isDark = theme === 'dark';
   const [containerWidth, setContainerWidth] = useState(0);
 
+  // Nome do mês atual
+  const currentMonthName = new Date().toLocaleDateString('pt-BR', { month: 'long' });
+
   // Converte os dados para o formato da biblioteca
-  const pieData = data.map((item) => ({
-    value: item.percentage,
-    color: item.color,
-    gradientCenterColor: item.color,
-    focused: false,
-    text: `${item.percentage}%`,
-    textColor: isDark ? '#FFFFFF' : '#000000',
-    textSize: 14,
-    fontWeight: 'bold',
-  }));
+  const pieData = data.map((item) => {
+    // Garantir valor numérico
+    const pct = item.percentage ?? 0;
+    // Formatar com duas casas decimais
+    const formatted = pct.toFixed(2);
+
+    return {
+      value: pct,
+      color: item.color,
+      gradientCenterColor: item.color,
+      focused: false,
+      text: `${formatted}%`,
+      textColor: isDark ? '#FFFFFF' : '#000000',
+      textSize: 14,
+      fontWeight: 'bold',
+    };
+  });
 
   // Calcula o raio baseado no container e responsividade
   const calculateRadius = () => {
@@ -42,11 +52,11 @@ const CategoryExpensesChart: React.FC<CategoryExpensesChartProps> = ({ data }) =
 
   return (
     <Card 
-      className="p-4" 
+      className="p-4 h-full" 
       style={cardHeight ? { height: cardHeight } : { minHeight: 400 }}
     >
       <Text className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-        Gastos por Categorias
+        Gastos por Categoria - {currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1)}
       </Text>
       
       <View 
@@ -79,29 +89,33 @@ const CategoryExpensesChart: React.FC<CategoryExpensesChartProps> = ({ data }) =
 
             {/* Legenda */}
             <View className={`w-full ${isMobile ? 'space-y-2' : 'space-y-3'}`}>
-              {data.map((item, index) => (
-                <View key={index} className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View
-                      className="w-3 h-3 rounded-full mr-3"
-                      style={{ backgroundColor: item.color }}
-                    />
+              {data.map((item, index) => {
+                const pct = item.percentage ?? 0;
+                const formatted = pct.toFixed(2);
+                return (
+                  <View key={index} className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <View
+                        className="w-3 h-3 rounded-full mr-3"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <Text className={`
+                        flex-1 font-medium ${isMobile ? 'text-sm' : ''}
+                        ${isDark ? 'text-white' : 'text-gray-900'}
+                      `}>
+                        {item.name}
+                      </Text>
+                    </View>
+                    
                     <Text className={`
-                      flex-1 font-medium ${isMobile ? 'text-sm' : ''}
-                      ${isDark ? 'text-white' : 'text-gray-900'}
+                      font-semibold ${isMobile ? 'text-sm' : ''}
+                      ${isDark ? 'text-gray-300' : 'text-gray-700'}
                     `}>
-                      {item.category}
+                      {formatted}%
                     </Text>
                   </View>
-                  
-                  <Text className={`
-                    font-semibold ${isMobile ? 'text-sm' : ''}
-                    ${isDark ? 'text-gray-300' : 'text-gray-700'}
-                  `}>
-                    {item.percentage}%
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </>
         )}
@@ -110,4 +124,4 @@ const CategoryExpensesChart: React.FC<CategoryExpensesChartProps> = ({ data }) =
   );
 };
 
-export default CategoryExpensesChart; 
+export default CategoryExpensesChart;
