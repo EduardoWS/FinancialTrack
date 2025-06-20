@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Dimensions, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Meta } from '../../services/metasService';
@@ -30,181 +31,163 @@ const MetaOptionsModal: React.FC<MetaOptionsModalProps> = ({
   const isDark = theme === 'dark';
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
+  const isMobile = screenWidth < 768;
 
   if (!meta) return null;
+
+  const OptionButton = ({
+    onPress,
+    iconName,
+    title,
+    subtitle,
+    color,
+  }: {
+    onPress: () => void;
+    iconName: keyof typeof Ionicons.glyphMap;
+    title: string;
+    subtitle: string;
+    color: 'green' | 'yellow' | 'blue' | 'red';
+  }) => {
+    const themeColors = {
+      green: { light: '#16a34a', dark: '#4ade80' },
+      yellow: { light: '#f59e0b', dark: '#facc15' },
+      blue: { light: '#2563eb', dark: '#60a5fa' },
+      red: { light: '#dc2626', dark: '#f87171' },
+    };
+
+    const subtextColor = isDark ? 'text-gray-400' : 'text-gray-500';
+    const bgColor = isDark ? 'bg-gray-700' : 'bg-gray-100';
+    
+    const iconColorValue = isDark ? themeColors[color].dark : themeColors[color].light;
+    const textColorClass = {
+      green: isDark ? 'text-green-400' : 'text-green-600',
+      yellow: isDark ? 'text-yellow-400' : 'text-yellow-600',
+      blue: isDark ? 'text-blue-400' : 'text-blue-600',
+      red: isDark ? 'text-red-400' : 'text-red-600',
+    }[color];
+
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        className={`p-4 rounded-lg flex-row items-center ${bgColor} ${isMobile ? 'mb-3' : 'w-[48%]'}`}
+      >
+        <Ionicons name={iconName} size={24} color={iconColorValue} style={{ marginRight: 16 }} />
+        <View>
+          <Text className={`font-medium ${textColorClass}`}>{title}</Text>
+          <Text className={`text-xs ${subtextColor}`}>{subtitle}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderHeader = () => (
+    <View className={`items-center p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+      <View 
+        className="w-16 h-16 rounded-full items-center justify-center mb-4"
+        style={{ backgroundColor: `${meta.cor}20` }}
+      >
+        <Text className="text-2xl">{meta.icone}</Text>
+      </View>
+      <Text className={`text-lg font-bold text-center mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        {meta.nome}
+      </Text>
+      <View className={`px-3 py-1 rounded-full ${isActive ? 'bg-blue-100' : 'bg-green-100'}`}>
+        <Text className={`text-sm font-medium ${isActive ? 'text-blue-700' : 'text-green-700'}`}>
+          {isActive ? 'Ativa' : 'Finalizada'} • {Math.round(progresso)}%
+        </Text>
+      </View>
+    </View>
+  );
+
+  const renderOptions = () => (
+    <View className={`p-4 ${!isMobile ? 'flex-row flex-wrap justify-between gap-y-3' : ''}`}>
+      {isActive && (
+        <>
+          <OptionButton
+            onPress={onAddValor}
+            iconName="wallet-outline"
+            title="Adicionar Valor"
+            subtitle="Contribuir para esta meta"
+            color="green"
+          />
+          <OptionButton
+            onPress={onFinalizar}
+            iconName="trophy-outline"
+            title="Finalizar Meta"
+            subtitle="Marcar como concluída"
+            color="yellow"
+          />
+          {!isMobile && <View className="w-full h-px my-1 bg-transparent" />}
+        </>
+      )}
+      <OptionButton
+        onPress={onEdit}
+        iconName="pencil-outline"
+        title="Editar Meta"
+        subtitle="Alterar nome, valor, etc."
+        color="blue"
+      />
+      <OptionButton
+        onPress={onDelete}
+        iconName="trash-outline"
+        title="Excluir Meta"
+        subtitle="Remover permanentemente"
+        color="red"
+      />
+    </View>
+  );
+
+  const renderMobileModal = () => (
+    <View className="flex-1 bg-black bg-opacity-50 justify-end">
+      <View className={`rounded-t-3xl ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
+        {renderHeader()}
+        <ScrollView style={{ maxHeight: screenHeight * 0.6 }}>
+          {renderOptions()}
+        </ScrollView>
+        <View className={`p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <TouchableOpacity
+            onPress={onClose}
+            className={`p-3 rounded-lg border-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}
+          >
+            <Text className={`text-center font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Fechar
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderWebModal = () => (
+    <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-4">
+      <View 
+        className={`rounded-2xl shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+        style={{ width: Math.min(screenWidth * 0.9, 500) }}
+      >
+        {renderHeader()}
+        {renderOptions()}
+        <View className={`p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} items-end`}>
+          <TouchableOpacity
+            onPress={onClose}
+            className={`px-6 py-2 rounded-lg border-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}
+          >
+            <Text className={`text-center font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              Fechar
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <Modal
       visible={visible}
       transparent={true}
-      animationType="fade"
+      animationType={isMobile ? 'slide' : 'fade'}
       onRequestClose={onClose}
     >
-      {/* Fundo desfocado */}
-      <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-4">
-        {/* Container do modal */}
-        <View 
-          className={`
-            rounded-2xl shadow-2xl
-            ${isDark ? 'bg-gray-800' : 'bg-white'}
-          `}
-          style={{
-            width: Math.min(screenWidth * 0.9, 350),
-            maxHeight: screenHeight * 0.8
-          }}
-        >
-          {/* Header com informações da meta */}
-          <View className={`
-            items-center p-6 border-b
-            ${isDark ? 'border-gray-700' : 'border-gray-200'}
-          `}>
-            <View 
-              className="w-16 h-16 rounded-full items-center justify-center mb-4"
-              style={{ backgroundColor: `${meta.cor}20` }}
-            >
-              <Text className="text-2xl">{meta.icone}</Text>
-            </View>
-            <Text className={`text-lg font-bold text-center mb-2 ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>
-              {meta.nome}
-            </Text>
-            <View className={`px-3 py-1 rounded-full ${
-              isActive ? 'bg-blue-100' : 'bg-green-100'
-            }`}>
-              <Text className={`text-sm font-medium ${
-                isActive ? 'text-blue-700' : 'text-green-700'
-              }`}>
-                {isActive ? 'Ativa' : 'Finalizada'} • {Math.round(progresso)}%
-              </Text>
-            </View>
-          </View>
-
-          {/* Lista de opções */}
-          <ScrollView
-            className="flex-1"
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: screenHeight * 0.8 - 200 }}
-          >
-            <View className="p-4">
-              {isActive && (
-                <>
-                  <TouchableOpacity
-                    onPress={onAddValor}
-                    className={`
-                      p-4 rounded-lg mb-3 flex-row items-center
-                      ${isDark ? 'bg-green-100/10 border border-green-500' : 'bg-green-50 border border-green-200'}
-                    `}
-                  >
-                    <Text className="text-2xl mr-3">💰</Text>
-                    <View>
-                      <Text className={`font-medium ${
-                        isDark ? 'text-green-400' : 'text-green-700'
-                      }`}>
-                        Adicionar Valor
-                      </Text>
-                      <Text className={`text-xs ${
-                        isDark ? 'text-green-300' : 'text-green-600'
-                      }`}>
-                        Contribuir para esta meta
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={onFinalizar}
-                    className={`
-                      p-4 rounded-lg mb-3 flex-row items-center
-                      ${isDark ? 'bg-yellow-100/10 border border-yellow-500' : 'bg-yellow-50 border border-yellow-200'}
-                    `}
-                  >
-                    <Text className="text-2xl mr-3">🏆</Text>
-                    <View>
-                      <Text className={`font-medium ${
-                        isDark ? 'text-yellow-400' : 'text-yellow-700'
-                      }`}>
-                        Finalizar Meta
-                      </Text>
-                      <Text className={`text-xs ${
-                        isDark ? 'text-yellow-300' : 'text-yellow-600'
-                      }`}>
-                        Marcar como concluída
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <View className={`h-px mb-3 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
-                </>
-              )}
-
-              <TouchableOpacity
-                onPress={onEdit}
-                className={`
-                  p-4 rounded-lg mb-3 flex-row items-center
-                  ${isDark ? 'bg-blue-100/10 border border-blue-500' : 'bg-blue-50 border border-blue-200'}
-                `}
-              >
-                <Text className="text-2xl mr-3">✏️</Text>
-                <View>
-                  <Text className={`font-medium ${
-                    isDark ? 'text-blue-400' : 'text-blue-700'
-                  }`}>
-                    Editar Meta
-                  </Text>
-                  <Text className={`text-xs ${
-                    isDark ? 'text-blue-300' : 'text-blue-600'
-                  }`}>
-                    Alterar nome, valor, etc.
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={onDelete}
-                className={`
-                  p-4 rounded-lg flex-row items-center
-                  ${isDark ? 'bg-red-100/10 border border-red-500' : 'bg-red-50 border border-red-200'}
-                `}
-              >
-                <Text className="text-2xl mr-3">🗑️</Text>
-                <View>
-                  <Text className={`font-medium ${
-                    isDark ? 'text-red-400' : 'text-red-700'
-                  }`}>
-                    Excluir Meta
-                  </Text>
-                  <Text className={`text-xs ${
-                    isDark ? 'text-red-300' : 'text-red-600'
-                  }`}>
-                    Remover permanentemente
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-
-          {/* Footer */}
-          <View className={`
-            p-4 border-t
-            ${isDark ? 'border-gray-700' : 'border-gray-200'}
-          `}>
-            <TouchableOpacity
-              onPress={onClose}
-              className={`
-                p-3 rounded-lg border-2
-                ${isDark ? 'border-gray-600' : 'border-gray-300'}
-              `}
-            >
-              <Text className={`
-                text-center font-medium
-                ${isDark ? 'text-gray-300' : 'text-gray-700'}
-              `}>
-                Fechar
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+      {isMobile ? renderMobileModal() : renderWebModal()}
     </Modal>
   );
 };
