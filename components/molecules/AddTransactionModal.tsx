@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   Modal,
@@ -24,13 +24,15 @@ interface NewTransaction {
 interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
-  onAdd: (transaction: Omit<Transaction, 'id'>) => void;
+  onSave: (transaction: Omit<Transaction, 'id'>, id?: string) => void;
+  editingTransaction?: Transaction | null;
 }
 
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ 
   visible, 
   onClose, 
-  onAdd 
+  onSave,
+  editingTransaction
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -48,6 +50,22 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Partial<NewTransaction>>({});
+
+  useEffect(() => {
+    if (editingTransaction && visible) {
+      setFormData({
+        description: editingTransaction.description,
+        amount: String(Math.abs(editingTransaction.amount)),
+        type: editingTransaction.type,
+        category: editingTransaction.category,
+        date: typeof editingTransaction.date === 'string'
+          ? editingTransaction.date
+          : editingTransaction.date.toLocaleDateString('pt-BR'),
+      });
+    } else {
+      resetForm();
+    }
+  }, [editingTransaction, visible]);
 
   const categories = {
     income: ['Salário', 'Freelance', 'Transferência', 'Investimentos', 'Outros'],
@@ -91,7 +109,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       date: formData.date
     };
 
-    onAdd(transaction);
+    onSave(transaction, editingTransaction?.id);
     resetForm();
   };
 
@@ -135,7 +153,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <Text className={`text-xl font-bold ${
             isDark ? 'text-white' : 'text-gray-900'
           }`}>
-            Nova Transação
+            {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
           </Text>
           <TouchableOpacity
             onPress={handleClose}
@@ -178,7 +196,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             className="flex-1 py-4 rounded-xl bg-blue-600"
           >
             <Text className="text-center font-semibold text-base text-white">
-              Cadastrar
+              {editingTransaction ? 'Atualizar' : 'Cadastrar'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -206,7 +224,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           <Text className={`text-2xl font-bold ${
             isDark ? 'text-white' : 'text-gray-900'
           }`}>
-            Nova Transação
+            {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
           </Text>
           <TouchableOpacity
             onPress={handleClose}
@@ -252,7 +270,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             className="px-8 py-3 rounded-xl bg-blue-600"
           >
             <Text className="text-white font-semibold text-base">
-              Cadastrar Transação
+              {editingTransaction ? 'Atualizar Transação' : 'Cadastrar Transação'}
             </Text>
           </TouchableOpacity>
         </View>

@@ -4,9 +4,11 @@ import { errorToast, successToast } from '../../components/atoms/custom-toasts';
 import ScreenLoader from '../../components/atoms/ScreenLoader';
 import Header from '../../components/Header';
 import AddTransactionModal from '../../components/molecules/AddTransactionModal';
+import ConfirmationModal from "../../components/molecules/ConfirmationModal";
+import TransactionOptionsModal from "../../components/molecules/TransactionOptionsModal";
 import { FilterType, useTransactions } from '../../hooks/useTransactions';
 import { useTheme } from '../../services/ThemeContext';
-import { formatCurrency } from '../../services/transacoesService';
+import { formatCurrency, Transaction } from "../../services/transacoesService";
 
 const TransacoesScreen = () => {
   const { theme } = useTheme();
@@ -16,7 +18,11 @@ const TransacoesScreen = () => {
   const showCategory = width >= 500;
   const isVeryNarrow = width < 400;
   
-  const [modalVisible, setModalVisible] = useState(false);
+  const [addEditModalVisible, setAddEditModalVisible] = useState(false);
+  const [optionsModalVisible, setOptionsModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   // Hook customizado para gerenciar transações
   const {
@@ -33,8 +39,54 @@ const TransacoesScreen = () => {
     setActiveFilter,
     setCurrentPage,
     adicionarTransacao,
+    atualizarTransacao,
+    excluirTransacao,
     refreshTransactions
-  } = useTransactions(5);
+  } = useTransactions(5); // Aumentei para 10 itens por página
+
+  const handleTransactionPress = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setOptionsModalVisible(true);
+  };
+
+  const handleEdit = () => {
+    setOptionsModalVisible(false);
+    setAddEditModalVisible(true);
+  };
+
+  const handleDelete = () => {
+    setOptionsModalVisible(false);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedTransaction) {
+      try {
+        await excluirTransacao(selectedTransaction.id);
+        successToast('Transação excluída com sucesso!');
+        setDeleteModalVisible(false);
+        setSelectedTransaction(null);
+      } catch (err: any) {
+        errorToast('Erro ao excluir transação', err.message);
+      }
+    }
+  };
+
+  const handleSaveTransaction = async (transactionData: Omit<Transaction, 'id'>, id?: string) => {
+    try {
+      if (id) {
+        await atualizarTransacao(id, transactionData);
+        successToast('Transação atualizada com sucesso!');
+      } else {
+        await adicionarTransacao(transactionData);
+        successToast('Transação adicionada com sucesso!');
+      }
+      setAddEditModalVisible(false);
+      setSelectedTransaction(null); // Limpa a seleção após salvar/editar
+    } catch (err: any) {
+      errorToast(id ? 'Erro ao atualizar' : 'Erro ao adicionar', err.message);
+    }
+  };
 
   const getAmountColor = (type: 'income' | 'expense') => {
     return type === 'income' ? 'text-green-600' : 'text-red-600';
@@ -123,16 +175,6 @@ const TransacoesScreen = () => {
     </TouchableOpacity>
   );
 
-  const handleAddTransaction = async (transactionData: any) => {
-    try {
-      await adicionarTransacao(transactionData);
-      successToast('Transação adicionada com sucesso!');
-      setModalVisible(false);
-    } catch (err: any) {
-      errorToast('Erro ao adicionar transação', err.message);
-    }
-  };
-
   // Componente de carregamento
   if (loading) {
     return <ScreenLoader title="Transações" text="Carregando transações..." />;
@@ -184,7 +226,10 @@ const TransacoesScreen = () => {
               />
             </View>
             <TouchableOpacity
-              onPress={() => setModalVisible(true)}
+              onPress={() => {
+                setSelectedTransaction(null); // Garante que estamos criando, não editando
+                setAddEditModalVisible(true);
+              }}
               className="bg-blue-600 py-3 px-4 rounded-lg"
             >
               <Text className="text-white font-medium text-center">
@@ -218,7 +263,10 @@ const TransacoesScreen = () => {
             </ScrollView>
             <View className="flex-1 items-end">
               <TouchableOpacity
-                onPress={() => setModalVisible(true)}
+                onPress={() => {
+                  setSelectedTransaction(null); // Garante que estamos criando, não editando
+                  setAddEditModalVisible(true);
+                }}
                 className="bg-blue-600 px-4 py-2 rounded-lg"
               >
                 <Text className="text-white font-medium">Cadastrar Transação</Text>
@@ -304,7 +352,10 @@ const TransacoesScreen = () => {
                   }
                 </Text>
                 <TouchableOpacity
-                  onPress={() => setModalVisible(true)}
+                  onPress={() => {
+                    setSelectedTransaction(null); // Garante que estamos criando, não editando
+                    setAddEditModalVisible(true);
+                  }}
                   className="bg-blue-600 px-6 py-3 rounded-lg mt-4"
                 >
                   <Text className="text-white font-medium">
@@ -315,11 +366,12 @@ const TransacoesScreen = () => {
             ) : (
               <View className="space-y-2">
                 {paginatedTransactions.map((transaction) => (
-                <View 
+                <TouchableOpacity 
                   key={transaction.id}
+                  onPress={() => handleTransactionPress(transaction)}
                   className={`
                     flex-row items-center justify-between p-3 rounded-lg
-                    ${isDark ? 'bg-gray-750' : 'bg-gray-50'}
+                    ${isDark ? 'bg-gray-700' : 'bg-gray-100'}
                   `}
                 >
                   {/* Ícone e Descrição */}
@@ -363,7 +415,7 @@ const TransacoesScreen = () => {
                     <View className="w-24 items-center">
                       <View className={`
                         px-2 py-1 rounded-full
-                        ${isDark ? 'bg-gray-700' : 'bg-gray-200'}
+                        ${isDark ? 'bg-gray-600' : 'bg-gray-200'}
                       `}>
                         <Text className={`
                           text-xs
@@ -402,7 +454,7 @@ const TransacoesScreen = () => {
                       {formatCurrency(Math.abs(transaction.amount))}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
                               ))}
               </View>
             )}
@@ -478,11 +530,33 @@ const TransacoesScreen = () => {
         )}
       </View>
 
-      {/* Modal para adicionar nova transação */}
+      {/* Modal para adicionar/editar nova transação */}
       <AddTransactionModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onAdd={handleAddTransaction}
+        visible={addEditModalVisible}
+        onClose={() => {
+          setAddEditModalVisible(false);
+          setSelectedTransaction(null);
+        }}
+        onSave={handleSaveTransaction}
+        editingTransaction={selectedTransaction}
+      />
+
+      {/* Modal de Opções da Transação */}
+      <TransactionOptionsModal
+        visible={optionsModalVisible}
+        onClose={() => setOptionsModalVisible(false)}
+        transaction={selectedTransaction}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+
+      {/* Modal de Confirmação para Excluir */}
+      <ConfirmationModal
+        visible={deleteModalVisible}
+        onClose={() => setDeleteModalVisible(false)}
+        onConfirm={confirmDelete}
+        title="Excluir Transação"
+        message={`Tem certeza que deseja excluir a transação "${selectedTransaction?.description}"? Esta ação não pode ser desfeita.`}
       />
       </SafeAreaView>
     );
