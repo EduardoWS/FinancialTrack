@@ -55,7 +55,7 @@ const TransacoesScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveFilter(filter)}
         className={`
-          px-4 py-2 rounded-full border-2 min-w-[100px] items-center
+          flex-1 py-2 px-1 rounded-lg border items-center mx-1
           ${isActive 
             ? (isDark ? 'bg-blue-600 border-blue-600' : 'bg-blue-600 border-blue-600')
             : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
@@ -63,7 +63,7 @@ const TransacoesScreen = () => {
         `}
       >
         <Text className={`
-          font-medium text-sm
+          font-medium text-xs text-center
           ${isActive 
             ? 'text-white' 
             : (isDark ? 'text-gray-300' : 'text-gray-700')
@@ -155,17 +155,12 @@ const TransacoesScreen = () => {
       <Header title="Transações" />
       
       <View className="flex-1 p-4">
-        {/* Header da página com filtros */}
-        <View className="mb-6 flex-row justify-between items-center">
-          {/* Filtros */}
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="flex-row space-x-3"
-          >
+        {/* Filtros e Botão Cadastrar organizados verticalmente para mobile */}
+        <View className="mb-6">
+          <View className="flex-row mb-3">
             <FilterButton 
               filter="all" 
-              label="Todas as transações" 
+              label="Todas" 
               count={transactions.length}
             />
             <FilterButton 
@@ -178,15 +173,16 @@ const TransacoesScreen = () => {
               label="Saídas" 
               count={expenseTransactions.length}
             />
-          </ScrollView>
-          <View className="flex-1 items-end">
-            <TouchableOpacity
-              onPress={() => setModalVisible(true)}
-              className="bg-blue-600 px-4 py-2 rounded-lg"
-            >
-              <Text className="text-white font-medium">Cadastrar Transação</Text>
-            </TouchableOpacity>
           </View>
+          
+          <TouchableOpacity
+            onPress={() => setModalVisible(true)}
+            className="bg-blue-600 py-3 px-4 rounded-lg"
+          >
+            <Text className="text-white font-medium text-center">
+              Cadastrar Nova Transação
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Tabela de transações */}

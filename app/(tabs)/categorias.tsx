@@ -96,7 +96,7 @@ const CategoriasScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveTab(filter)}
         className={`
-          px-4 py-2 rounded-full border-2 min-w-[100px] items-center mr-3
+          flex-1 py-2 px-2 rounded-lg border items-center mx-1
           ${isActive 
             ? (color === 'green' 
               ? (isDark ? 'bg-green-600 border-green-600' : 'bg-green-600 border-green-600')
@@ -107,7 +107,7 @@ const CategoriasScreen = () => {
         `}
       >
         <Text className={`
-          font-medium text-sm
+          font-medium text-sm text-center
           ${isActive 
             ? 'text-white' 
             : (isDark ? 'text-gray-300' : 'text-gray-700')
@@ -137,13 +137,9 @@ const CategoriasScreen = () => {
       <Header title="Categorias" />
       
       <View className="flex-1 p-4">
-        {/* Filtros e Botão Adicionar Categoria */}
-        <View className="flex-row justify-between items-center mb-6">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="flex-1"
-          >
+        {/* Filtros e Botão Adicionar Categoria organizados verticalmente para mobile */}
+        <View className="mb-6">
+          <View className="flex-row mb-3">
             <FilterButton 
               filter="expense" 
               label="Despesas" 
@@ -156,16 +152,16 @@ const CategoriasScreen = () => {
               count={incomeCategories.length}
               color="green"
             />
-          </ScrollView>
+          </View>
           
           <TouchableOpacity
             onPress={openAddModal}
-            className={`px-4 py-2 rounded-lg ml-3 ${
+            className={`py-3 px-4 rounded-lg ${
               activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
             }`}
           >
-            <Text className="text-white font-medium text-sm">
-              + Categoria
+            <Text className="text-white font-medium text-center">
+              Adicionar Nova Categoria
             </Text>
           </TouchableOpacity>
         </View>

@@ -100,7 +100,7 @@ const RelatoriosScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveFilter(filter)}
         className={`
-          px-4 py-2 rounded-full border-2 min-w-[80px] items-center mr-3
+          flex-1 py-2 px-1 rounded-lg border items-center mx-1
           ${isActive 
             ? (isDark ? 'bg-blue-600 border-blue-600' : 'bg-blue-600 border-blue-600')
             : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
@@ -108,7 +108,7 @@ const RelatoriosScreen = () => {
         `}
       >
         <Text className={`
-          font-medium text-sm
+          font-medium text-xs text-center
           ${isActive 
             ? 'text-white' 
             : (isDark ? 'text-gray-300' : 'text-gray-700')
@@ -199,18 +199,21 @@ const RelatoriosScreen = () => {
       <Header title="Relatórios e Dicas" />
       
       <View className="flex-1 p-4">
-        {/* Filtros e Botão Marcar todos como lidos */}
-        <View className="flex-row justify-between items-center mb-6">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="flex-1"
-          >
+        {/* Filtros em grid 2x2 para mobile */}
+        <View className="mb-6">
+          <View className="flex-row mb-3">
             <FilterButton 
               filter="all" 
               label="Todos" 
               count={reports.length}
             />
+            <FilterButton 
+              filter="unread" 
+              label="Não lidos" 
+              count={unreadReports.length}
+            />
+          </View>
+          <View className="flex-row mb-3">
             <FilterButton 
               filter="alerts" 
               label="Alertas" 
@@ -221,19 +224,15 @@ const RelatoriosScreen = () => {
               label="Dicas" 
               count={tipReports.length}
             />
-            <FilterButton 
-              filter="unread" 
-              label="Não lidos" 
-              count={unreadReports.length}
-            />
-          </ScrollView>
+          </View>
           
+          {/* Botão Marcar todos como lidos */}
           {unreadReports.length > 0 && (
             <TouchableOpacity
               onPress={handleMarkAllAsRead}
-              className="bg-blue-600 px-4 py-2 rounded-lg ml-3"
+              className="bg-blue-600 py-2 px-4 rounded-lg"
             >
-              <Text className="text-white font-medium text-sm">
+              <Text className="text-white font-medium text-center text-sm">
                 Marcar todos como lidos
               </Text>
             </TouchableOpacity>

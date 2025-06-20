@@ -171,7 +171,7 @@ const MetasScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveTab(filter)}
         className={`
-          px-4 py-2 rounded-full border-2 min-w-[120px] items-center mr-3
+          flex-1 py-2 px-2 rounded-lg border items-center mx-1
           ${
             isActive
               ? color === 'green'
@@ -189,7 +189,7 @@ const MetasScreen = () => {
       >
         <Text
           className={`
-          font-medium text-sm
+          font-medium text-sm text-center
           ${isActive ? 'text-white' : isDark ? 'text-gray-300' : 'text-gray-700'}
         `}
         >
@@ -224,8 +224,8 @@ const MetasScreen = () => {
       <Header title="Metas Financeiras" />
 
       <View className="flex-1 p-4">
-        <View className="flex-row justify-between items-center mb-6">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
+        <View className="mb-6">
+          <View className="flex-row mb-3">
             <FilterButton
               filter="ativas"
               label="Metas Ativas"
@@ -238,10 +238,15 @@ const MetasScreen = () => {
               count={metasFinalizadas.length}
               color="green"
             />
-          </ScrollView>
-
-          <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-blue-600 px-4 py-2 rounded-lg ml-3">
-            <Text className="text-white font-medium text-sm">Criar Meta</Text>
+          </View>
+          
+          <TouchableOpacity 
+            onPress={() => setModalVisible(true)} 
+            className="bg-blue-600 py-3 px-4 rounded-lg"
+          >
+            <Text className="text-white font-medium text-center">
+              Criar Nova Meta
+            </Text>
           </TouchableOpacity>
         </View>
 
