@@ -24,11 +24,6 @@ export function ThemeToggle() {
   if (isMobile) {
     return (
       <View className="flex-row items-center space-x-2">
-        <Ionicons
-          name={isDark ? 'moon' : 'sunny'}
-          size={18}
-          color={isDark ? '#D1D5DB' : '#6B7280'}
-        />
         <ThemeSwitch />
       </View>
     );
