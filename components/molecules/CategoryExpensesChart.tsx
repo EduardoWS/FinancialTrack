@@ -88,12 +88,17 @@ const CategoryExpensesChart: React.FC<CategoryExpensesChartProps> = ({ data }) =
             </View>
 
             {/* Legenda */}
-            <View className={`w-full ${isMobile ? 'space-y-2' : 'space-y-3'}`}>
+            <View className={`w-full`}>
               {data.map((item, index) => {
                 const pct = item.percentage ?? 0;
                 const formatted = pct.toFixed(2);
                 return (
-                  <View key={index} className="flex-row items-center justify-between">
+                  <View 
+                    key={index} 
+                    className={`flex-row items-center justify-between ${
+                      index > 0 ? (isMobile ? 'mt-2' : 'mt-3') : ''
+                    }`}
+                  >
                     <View className="flex-row items-center flex-1">
                       <View
                         className="w-3 h-3 rounded-full mr-3"

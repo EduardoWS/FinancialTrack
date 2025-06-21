@@ -50,7 +50,7 @@ const TransacoesScreen = () => {
     atualizarTransacao,
     excluirTransacao,
     refreshTransactions
-  } = useTransactions(5);
+  } = useTransactions(10);
 
   const handleTransactionPress = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -168,7 +168,7 @@ const TransacoesScreen = () => {
   }) => (
     <TouchableOpacity
       onPress={onPress}
-      className={`
+      className={`mr-2
         w-10 h-10 rounded-lg items-center justify-center
         ${isActive 
           ? (isDark ? 'bg-blue-600' : 'bg-blue-600')
@@ -296,7 +296,7 @@ const TransacoesScreen = () => {
           </View>
 
           {/* Headers da tabela */}
-          <View className="flex-row justify-between items-center mb-3 px-2">
+          {/* <View className="flex-row justify-between items-center mb-3 px-2">
             <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium flex-1 ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>
@@ -321,7 +321,7 @@ const TransacoesScreen = () => {
             }`}>
               Valor
             </Text>
-          </View>
+          </View> */}
 
           {/* Lista de transações paginadas */}
           <ScrollView 
@@ -363,98 +363,99 @@ const TransacoesScreen = () => {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View className="space-y-2">
-                {paginatedTransactions.map((transaction) => (
-                <TouchableOpacity 
-                  key={transaction.id}
-                  onPress={() => handleTransactionPress(transaction)}
-                  className={`
-                    flex-row items-center justify-between p-3 rounded-lg
-                    ${isDark ? 'bg-gray-700' : 'bg-gray-100'}
-                  `}
-                >
-                  {/* Ícone e Descrição */}
-                  <View className="flex-row items-center flex-1">
-                    <View className={`
-                      w-8 h-8 rounded-full items-center justify-center mr-3
-                      ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'}
-                    `}>
-                      <Text className={`
-                        text-sm font-bold
-                        ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}
-                      `}>
-                        {getTransactionIcon(transaction.type)}
-                      </Text>
-                    </View>
-                    <View className="flex-1">
-                      <Text className={`
-                        font-medium flex-1
-                        ${isVeryNarrow ? 'text-sm' : ''}
-                        ${isDark ? 'text-white' : 'text-gray-900'}
-                      `}>
-                        {transaction.description}
-                      </Text>
-                      {isMobile && (
-                        <Text className={`
-                          text-xs
-                          ${isDark ? 'text-gray-400' : 'text-gray-500'}
+              <View className="">
+                {paginatedTransactions.map((transaction, index) => (
+                  <View key={transaction.id} className={index > 0 ? '' : ''}>
+                    <TouchableOpacity 
+                      onPress={() => handleTransactionPress(transaction)}
+                      className={` ${isMobile ? 'mb-2 py-6 px-4' : 'mb-2 py-6 px-4' }
+                        flex-row items-center justify-between p-3 rounded-lg
+                        ${isDark ? 'bg-gray-700' : 'bg-gray-100'}
+                      `}
+                    >
+                      {/* Ícone e Descrição */}
+                      <View className="flex-row items-center flex-1">
+                        <View className={`
+                          w-8 h-8 rounded-full items-center justify-center mr-3
+                          ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'}
                         `}>
-                          {new Date(transaction.date).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: isVeryNarrow ? '2-digit' : 'numeric',
-                          })}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
+                          <Text className={`
+                            text-sm font-bold
+                            ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}
+                          `}>
+                            {getTransactionIcon(transaction.type)}
+                          </Text>
+                        </View>
+                        <View className="flex-1">
+                          <Text className={`
+                            font-medium flex-1
+                            ${isVeryNarrow ? 'text-sm' : ''}
+                            ${isDark ? 'text-white' : 'text-gray-900'}
+                          `}>
+                            {transaction.description}
+                          </Text>
+                          {isMobile && (
+                            <Text className={`
+                              text-xs
+                              ${isDark ? 'text-gray-400' : 'text-gray-500'}
+                            `}>
+                              {new Date(transaction.date).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: isVeryNarrow ? '2-digit' : 'numeric',
+                              })}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
 
-                  {/* Categoria */}
-                  {showCategory && (
-                    <View className="w-24 items-center">
-                      <View className={`
-                        px-2 py-1 rounded-full
-                        ${isDark ? 'bg-gray-600' : 'bg-gray-200'}
-                      `}>
+                      {/* Categoria */}
+                      {showCategory && (
+                        <View className="w-24 items-center">
+                          <View className={`
+                            px-2 py-1 rounded-full
+                            ${isDark ? 'bg-gray-600' : 'bg-gray-200'}
+                          `}>
+                            <Text className={`
+                              text-xs
+                              ${isDark ? 'text-gray-300' : 'text-gray-700'}
+                            `}>
+                              {transaction.category}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Data */}
+                      {!isMobile && (
+                        <View className="w-24 items-center">
+                          <Text className={`
+                            text-sm
+                            ${isDark ? 'text-gray-400' : 'text-gray-600'}
+                          `}>
+                            {new Date(transaction.date).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: isVeryNarrow ? '2-digit' : 'numeric',
+                            })}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Valor */}
+                      <View className="w-24 items-end">
                         <Text className={`
-                          text-xs
-                          ${isDark ? 'text-gray-300' : 'text-gray-700'}
+                          font-semibold
+                          ${isVeryNarrow ? 'text-sm' : ''}
+                          ${getAmountColor(transaction.type)}
                         `}>
-                          {transaction.category}
+                          {transaction.type === 'income' ? '+' : '-'}
+                          {formatCurrency(Math.abs(transaction.amount))}
                         </Text>
                       </View>
-                    </View>
-                  )}
-
-                  {/* Data */}
-                  {!isMobile && (
-                    <View className="w-24 items-center">
-                      <Text className={`
-                        text-sm
-                        ${isDark ? 'text-gray-400' : 'text-gray-600'}
-                      `}>
-                        {new Date(transaction.date).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: isVeryNarrow ? '2-digit' : 'numeric',
-                        })}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Valor */}
-                  <View className="w-24 items-end">
-                    <Text className={`
-                      font-semibold
-                      ${isVeryNarrow ? 'text-sm' : ''}
-                      ${getAmountColor(transaction.type)}
-                    `}>
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(Math.abs(transaction.amount))}
-                    </Text>
+                    </TouchableOpacity>
                   </View>
-                </TouchableOpacity>
-                              ))}
+                ))}
               </View>
             )}
           </ScrollView>
@@ -462,18 +463,15 @@ const TransacoesScreen = () => {
 
         {/* Paginação */}
         {totalPages > 1 && (
-          <View className="flex-row justify-center items-center space-x-2">
-            {/* Botão Anterior */}
+          <View className="flex-row justify-center items-center">
             <TouchableOpacity
               onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className={`
-                px-3 py-2 rounded-lg
-                ${currentPage === 1 
+              className={`px-3 py-2 rounded-lg mr-2 ${
+                currentPage === 1 
                   ? (isDark ? 'bg-gray-700 opacity-50' : 'bg-gray-200 opacity-50')
                   : (isDark ? 'bg-gray-700' : 'bg-gray-200')
-                }
-              `}
+              }`}
             >
               <Text className={`
                 ${isDark ? 'text-gray-300' : 'text-gray-700'}
@@ -483,7 +481,7 @@ const TransacoesScreen = () => {
             </TouchableOpacity>
 
             {/* Números das páginas */}
-            <View className="flex-row space-x-2">
+            <View className="flex-row">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let page = i + 1;
                 
@@ -511,13 +509,11 @@ const TransacoesScreen = () => {
             <TouchableOpacity
               onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className={`
-                px-3 py-2 rounded-lg
-                ${currentPage === totalPages 
+              className={`px-3 py-2 rounded-lg mr-2 ${
+                currentPage === totalPages 
                   ? (isDark ? 'bg-gray-700 opacity-50' : 'bg-gray-200 opacity-50')
                   : (isDark ? 'bg-gray-700' : 'bg-gray-200')
-                }
-              `}
+              }`}
             >
               <Text className={`
                 ${isDark ? 'text-gray-300' : 'text-gray-700'}

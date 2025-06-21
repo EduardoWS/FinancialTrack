@@ -45,7 +45,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 
   // Transações recentes do mês corrente (limitadas)
   const recentCurrentMonthTransactions = useMemo(() => {
-    const limit = isMobile ? 3 : maxTransactions;
+    const limit = maxTransactions;
     return currentMonthTransactions.slice(0, limit);
   }, [currentMonthTransactions, isMobile, maxTransactions]);
 
@@ -78,7 +78,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             recentCurrentMonthTransactions.map((transaction) => (
               <View 
                 key={transaction.id}
-                className="flex-row items-center justify-between py-2"
+                className={`${isMobile ? 'mb-2' : '' } flex-row items-center justify-between py-2`}
               >
                 {/* Ícone e informações */}
                 <View className="flex-row items-center flex-1">

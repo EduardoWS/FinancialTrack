@@ -334,14 +334,12 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
         </ScrollView>
 
         {/* Footer */}
-        <View
-          className={`p-6 border-t flex-row space-x-4 ${
-            isDark ? 'border-gray-700' : 'border-gray-200'
-          }`}
-        >
+        <View className={`p-6 border-t flex-row ${
+          isDark ? 'border-gray-700' : 'border-gray-200'
+        }`}>
           <TouchableOpacity
             onPress={onClose}
-            className={`flex-1 py-4 rounded-xl border-2 ${
+            className={`flex-1 py-4 rounded-xl border-2 mr-4 ${
               isDark ? 'border-gray-600' : 'border-gray-300'
             }`}
           >
@@ -405,14 +403,12 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
         </ScrollView>
 
         {/* Footer */}
-        <View
-          className={`p-6 border-t flex-row space-x-4 justify-end ${
-            isDark ? 'border-gray-700' : 'border-gray-200'
-          }`}
-        >
+        <View className={`p-6 border-t flex-row justify-end ${
+          isDark ? 'border-gray-700' : 'border-gray-200'
+        }`}>
           <TouchableOpacity
             onPress={onClose}
-            className={`px-8 py-3 rounded-xl border-2 ${
+            className={`px-8 py-3 rounded-xl border-2 mr-4 ${
               isDark ? 'border-gray-600' : 'border-gray-300'
             }`}
           >

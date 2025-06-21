@@ -26,7 +26,7 @@ const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({ data }) => 
       value: item.income,
       label: item.month,
       labelTextStyle: { color: isDark ? '#A0AEC0' : '#718096', fontSize: 10 },
-      labelWidth: 36, // garante espaço suficiente para a abreviação do mês
+      labelWidth: isMobile ? 20 : 36, // garante espaço suficiente para a abreviação do mês
       spacing: 2, // pequeno espaço entre as barras do mesmo mês
       frontColor: '#34D399',
     },

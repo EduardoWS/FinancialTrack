@@ -5,12 +5,12 @@ import ScreenLoader from '../../components/atoms/ScreenLoader';
 import Header from '../../components/Header';
 import BalanceHistoryChart from '../../components/molecules/BalanceHistoryChart';
 import CategoryExpensesChart from '../../components/molecules/CategoryExpensesChart';
+import MonthlyActivityChart from '../../components/molecules/MonthlyActivityChart';
 import RecentTransactions from '../../components/molecules/RecentTransactions';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useScreenSize } from '../../hooks/useScreenSize';
 import { formatCurrency } from '../../services/dashboardService';
 import { useTheme } from '../../services/ThemeContext';
-import MonthlyActivityChart from '../../components/molecules/MonthlyActivityChart';
 
 const DashboardScreen = () => {
   const { theme } = useTheme();
@@ -116,7 +116,7 @@ const DashboardScreen = () => {
             </View>
 
             {/* Receitas e Gastos lado a lado no mobile */}
-            <View className={isMobile ? 'flex-row space-x-4' : 'contents'}>
+            <View className={isMobile ? 'flex-row' : 'contents'}>
               {/* Receitas do Mês */}
               <View className={isMobile ? 'flex-1 mr-2' : 'flex-1 min-w-[150px]'}>
                 <Card className="items-center p-4">
@@ -157,12 +157,12 @@ const DashboardScreen = () => {
             </View>
 
             {/* Últimas Transações */}
-            <View className={`${isMobile ? 'w-full mb-6 h-full' : 'flex-1'}`}>
+            <View className={`${isMobile ? 'w-full mb-6' : 'flex-1'}`}>
               {data?.recentTransactions && data?.allTransactions && (
                 <RecentTransactions 
                   transactions={data.recentTransactions} 
                   allTransactions={data.allTransactions}
-                  maxTransactions={isMobile ? 3 : 4}
+                  maxTransactions={isMobile ? 4 : 4}
                 />
               )}
             </View>

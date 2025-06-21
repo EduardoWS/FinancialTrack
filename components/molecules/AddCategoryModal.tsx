@@ -130,13 +130,13 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 
         {/* Footer */}
         <View className={`
-          p-6 border-t flex-row space-x-4
+          p-6 border-t flex-row
           ${isDark ? 'border-gray-700' : 'border-gray-200'}
         `}>
           <TouchableOpacity
             onPress={handleClose}
             className={`
-              flex-1 py-4 rounded-xl border-2
+              flex-1 py-4 rounded-xl border-2 mr-4
               ${isDark ? 'border-gray-600' : 'border-gray-300'}
             `}
           >
@@ -209,13 +209,13 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 
         {/* Footer */}
         <View className={`
-          p-6 border-t flex-row space-x-4 justify-end
+          p-6 border-t flex-row justify-end
           ${isDark ? 'border-gray-700' : 'border-gray-200'}
         `}>
           <TouchableOpacity
             onPress={handleClose}
             className={`
-              px-8 py-3 rounded-xl border-2
+              px-8 py-3 rounded-xl border-2 mr-4
               ${isDark ? 'border-gray-600' : 'border-gray-300'}
             `}
           >
@@ -272,11 +272,11 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
         }`}>
           Tipo de Categoria
         </Text>
-        <View className="flex-row space-x-4">
+        <View className="flex-row">
           <TouchableOpacity
             onPress={() => setFormData({ ...formData, type: 'expense' })}
             className={`
-              flex-1 p-4 rounded-xl border-2 items-center
+              flex-1 p-4 rounded-xl border-2 items-center mr-4
               ${formData.type === 'expense' 
                 ? 'bg-red-500/20 border-red-500' 
                 : (isDark ? 'bg-gray-800 border-gray-600' : 'bg-gray-50 border-gray-300')

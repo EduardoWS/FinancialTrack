@@ -37,10 +37,10 @@ export const MobileHeader = ({ title }: MobileHeaderProps) => {
         </Text>
         
         {/* Ações do Header */}
-        <View className="flex-row items-center space-x-3">
+        <View className="flex-row items-center">
           {/* Notificações */}
           <TouchableOpacity 
-            className={`p-2 rounded-full ${
+            className={`p-2 rounded-full mr-2 ${
               isDark ? 'active:bg-gray-700' : 'active:bg-gray-100'
             }`}
             activeOpacity={0.7}
@@ -86,23 +86,25 @@ export const MobileHeader = ({ title }: MobileHeaderProps) => {
           {/* Container do menu – absorve o clique para não fechar */}
           <Pressable
             onPress={() => { /* impede propagação */ }}
-            className={`absolute right-4 min-w-[200px] rounded-lg border shadow-lg ${
+            className={`absolute right-2  min-w-[200px] rounded-lg border shadow-lg ${
               isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
             }`}
-            style={{ top: 56 + Math.max(insets.top, 8) + 8 }}
+            style={{ top: 12 + Math.max(insets.top, 8) + 8 }}
           >
-            <View className="p-4 space-y-4">
-              {/* Toggle de Tema */}
-              <View className="flex-row items-center justify-between">
-                <Text className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>Tema</Text>
-                <ThemeToggle />
+            <View className="p-4">
+              <View className="mb-4">
+                {/* Toggle de Tema */}
+                <View className="flex-row items-center justify-between mb-4">
+                  <Text className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>Tema</Text>
+                  <ThemeToggle />
+                </View>
+
+                {/* Divisor */}
+                <View className={`h-px mb-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+
+                {/* Menu do usuário */}
+                <UserMenu />
               </View>
-
-              {/* Divisor */}
-              <View className={`h-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
-
-              {/* Menu do usuário */}
-              <UserMenu />
             </View>
           </Pressable>
         </Pressable>

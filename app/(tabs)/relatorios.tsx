@@ -223,7 +223,7 @@ const RelatoriosScreen = () => {
                 count={unreadReports.length}
               />
             </View>
-            <View className="flex-row mb-3">
+            {/* <View className="flex-row mb-3">
               <FilterButton 
                 filter="alerts" 
                 label="Alertas" 
@@ -234,14 +234,14 @@ const RelatoriosScreen = () => {
                 label="Dicas" 
                 count={tipReports.length}
               />
-            </View>
+            </View> */}
             
             {unreadReports.length > 0 && (
               <TouchableOpacity
                 onPress={handleMarkAllAsRead}
-                className="bg-blue-600 py-2 px-4 rounded-lg"
+                className="bg-blue-600 py-2 rounded-lg"
               >
-                <Text className="text-white font-medium text-center text-sm">
+                <Text className="text-white font-medium text-center text-sm py-2">
                   Marcar todos como lidos
                 </Text>
               </TouchableOpacity>
@@ -260,7 +260,7 @@ const RelatoriosScreen = () => {
                 label="Todos" 
                 count={reports.length}
               />
-              <FilterButton 
+              {/* <FilterButton 
                 filter="alerts" 
                 label="Alertas" 
                 count={alertReports.length}
@@ -269,7 +269,7 @@ const RelatoriosScreen = () => {
                 filter="tips" 
                 label="Dicas" 
                 count={tipReports.length}
-              />
+              /> */}
               <FilterButton 
                 filter="unread" 
                 label="Não lidos" 
@@ -282,7 +282,7 @@ const RelatoriosScreen = () => {
                 onPress={handleMarkAllAsRead}
                 className="bg-blue-600 px-4 py-2 rounded-lg ml-3"
               >
-                <Text className="text-white font-medium text-sm">
+                <Text className="text-white font-medium text-sm py-2">
                   Marcar todos como lidos
                 </Text>
               </TouchableOpacity>

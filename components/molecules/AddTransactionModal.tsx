@@ -178,12 +178,12 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         {/* Footer */}
         <View className={`
-          p-6 border-t flex-row space-x-4
+          p-6 border-t flex-row
           ${isDark ? 'border-gray-700' : 'border-gray-200'}
         `}>
           <TouchableOpacity
             onPress={handleClose}
-            className={`
+            className={`mr-4
               flex-1 py-4 rounded-xl border-2
               ${isDark ? 'border-gray-600' : 'border-gray-300'}
             `}
@@ -252,13 +252,13 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
         {/* Footer */}
         <View className={`
-          p-6 border-t flex-row space-x-4 justify-end
+          p-6 border-t flex-row justify-end
           ${isDark ? 'border-gray-700' : 'border-gray-200'}
         `}>
           <TouchableOpacity
             onPress={handleClose}
             className={`
-              px-8 py-3 rounded-xl border-2
+              px-8 py-3 rounded-xl border-2 mr-4
               ${isDark ? 'border-gray-600' : 'border-gray-300'}
             `}
           >
@@ -284,9 +284,9 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   );
 
   const renderContent = () => (
-    <View className={isWeb && !isMobile ? "flex-row space-x-8" : ""}>
+    <View className={isWeb && !isMobile ? "flex-row" : ""}>
       {/* Coluna 1 - Informações básicas */}
-      <View className={isWeb && !isMobile ? "flex-1" : ""}>
+      <View className={isWeb && !isMobile ? "flex-1 mr-8" : ""}>
         {/* Tipo de transação */}
         <View className="mb-6">
           <Text className={`text-sm font-semibold mb-3 ${
@@ -294,10 +294,10 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           }`}>
             Tipo de Transação
           </Text>
-          <View className="flex-row space-x-4">
+          <View className="flex-row">
             <TouchableOpacity 
               onPress={() => handleTypeChange('income')}
-              className={`
+              className={`mr-4
                 flex-1 p-4 rounded-xl border-2 items-center
                 ${formData.type === 'income' 
                   ? 'bg-green-500/20 border-green-500' 

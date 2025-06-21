@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Meta } from '../../services/metasService';
 import { formatCurrency } from '../../services/dashboardService';
+import { Meta } from '../../services/metasService';
 import { useTheme } from '../../services/ThemeContext';
 
 interface AddValorMetaModalProps {
@@ -195,7 +195,7 @@ const AddValorMetaModal: React.FC<AddValorMetaModalProps> = ({
                         }}
                         className={`px-4 py-2 rounded-lg border-2 active:scale-95 transition-transform ${
                           isDark 
-                            ? 'border-blue-500 bg-blue-500 bg-opacity-10' 
+                            ? 'border-blue-500 bg-black/20 bg-opacity-10' 
                             : 'border-blue-500 bg-blue-50'
                         }`}
                         activeOpacity={0.8}
@@ -224,13 +224,13 @@ const AddValorMetaModal: React.FC<AddValorMetaModalProps> = ({
 
           {/* Footer com botões */}
           <View className={`
-            p-6 border-t flex-row space-x-4
+            p-6 border-t flex-row
             ${isDark ? 'border-gray-700' : 'border-gray-200'}
           `}>
             <TouchableOpacity
               onPress={handleClose}
               className={`
-                flex-1 py-3 rounded-lg border-2
+                flex-1 py-3 rounded-lg border-2 mr-4
                 ${isDark ? 'border-gray-600' : 'border-gray-300'}
               `}
             >

@@ -23,7 +23,7 @@ export function ThemeToggle() {
   // Versão mobile: renderiza somente um switch sem menu adicional
   if (isMobile) {
     return (
-      <View className="flex-row items-center space-x-2">
+      <View className="flex-row items-center">
         <ThemeSwitch />
       </View>
     );

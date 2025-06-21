@@ -161,13 +161,13 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
 
         {/* Footer */}
         <View className={`
-          p-6 border-t flex-row space-x-4
+          p-6 border-t flex-row
           ${isDark ? 'border-gray-700' : 'border-gray-200'}
         `}>
           <TouchableOpacity
             onPress={handleClose}
             className={`
-              flex-1 py-4 rounded-xl border-2
+              flex-1 py-4 rounded-xl border-2 mr-4
               ${isDark ? 'border-gray-600' : 'border-gray-300'}
             `}
           >
@@ -235,13 +235,13 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
 
         {/* Footer */}
         <View className={`
-          p-6 border-t flex-row space-x-4 justify-end
+          p-6 border-t flex-row justify-end
           ${isDark ? 'border-gray-700' : 'border-gray-200'}
         `}>
           <TouchableOpacity
             onPress={handleClose}
             className={`
-              px-8 py-3 rounded-xl border-2
+              px-8 py-3 rounded-xl border-2 mr-4
               ${isDark ? 'border-gray-600' : 'border-gray-300'}
             `}
           >
@@ -267,9 +267,9 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
   );
 
   const renderContent = () => (
-    <View className={isWeb && !isMobile ? "flex-row space-x-8" : ""}>
+    <View className={isWeb && !isMobile ? "flex-row" : ""}>
       {/* Coluna 1 - Informações básicas */}
-      <View className={isWeb && !isMobile ? "flex-1" : ""}>
+      <View className={isWeb && !isMobile ? "flex-1 mr-8" : ""}>
         {/* Nome da Meta */}
         <View className="mb-6">
           <Text className={`text-sm font-semibold mb-3 ${
@@ -328,8 +328,8 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
         </View>
 
         {/* Valores */}
-        <View className="flex-row space-x-4 mb-6">
-          <View className="flex-1">
+        <View className="flex-row mb-6">
+          <View className="flex-1 mr-4">
             <Text className={`text-sm font-semibold mb-3 ${
               isDark ? 'text-gray-300' : 'text-gray-700'
             }`}>

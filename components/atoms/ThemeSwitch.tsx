@@ -37,7 +37,7 @@ export function ThemeSwitch() {
           position: 'absolute',
           left: 8,
           top: '50%',
-          transform: [{ translateY: -9 }],
+          transform: [{ translateY: -6 }],
         }}
       >
         <Ionicons
@@ -53,7 +53,7 @@ export function ThemeSwitch() {
           position: 'absolute',
           right: 8,
           top: '50%',
-          transform: [{ translateY: -9 }],
+          transform: [{ translateY: -6 }],
         }}
       >
         <Ionicons
