@@ -1,6 +1,7 @@
 export { BottomNavigation } from './BottomNavigation';
 export { default as Button } from './Button';
 export { default as Card } from './Card';
+export { default as ComboBox } from './ComboBox';
 export * from './custom-toasts';
 export { default as Input } from './Input';
 export { default as LoadingSpinner } from './LoadingSpinner';

@@ -19,6 +19,8 @@ const TransacoesScreen = () => {
   const isMobile = width < 768;
   const showCategory = width >= 500;
   const isVeryNarrow = width < 400;
+  const isNarrowHeader = width < 450;
+  const showFilterLabel = width >= 500;
   
   const [addEditModalVisible, setAddEditModalVisible] = useState(false);
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
@@ -287,32 +289,34 @@ const TransacoesScreen = () => {
               className="flex-row items-center bg-blue-600 px-3 py-2 rounded-lg"
             >
               <Ionicons name="filter" size={16} color="white" />
-              <Text className="text-white font-medium ml-2 text-sm">Filtrar</Text>
+              {showFilterLabel && (
+                <Text className="text-white font-medium ml-2 text-sm">Filtrar</Text>
+              )}
             </TouchableOpacity>
           </View>
 
           {/* Headers da tabela */}
           <View className="flex-row justify-between items-center mb-3 px-2">
-            <Text className={`text-sm font-medium flex-1 ${
+            <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium flex-1 ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>
               Descrição
             </Text>
             {showCategory && (
-              <Text className={`text-sm font-medium w-24 text-center ${
+              <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium w-24 text-center ${
                 isDark ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 Categoria
               </Text>
             )}
             {!isMobile && (
-              <Text className={`text-sm font-medium w-24 text-center ${
+              <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium w-24 text-center ${
                 isDark ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 Data
               </Text>
             )}
-            <Text className={`text-sm font-medium w-24 text-right ${
+            <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium w-24 text-right ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>
               Valor

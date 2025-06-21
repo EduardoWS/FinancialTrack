@@ -10,8 +10,10 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useCategorias } from '../../hooks/useCategorias';
 import { useTheme } from '../../services/ThemeContext';
 import { Transaction } from '../../services/transacoesService';
+import ComboBox, { ComboBoxItem } from '../atoms/ComboBox';
 
 interface NewTransaction {
   description: string;
@@ -51,6 +53,14 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const [errors, setErrors] = useState<Partial<NewTransaction>>({});
 
+  // Carregar categorias do usuário
+  const { incomeCategories, expenseCategories, loading: catLoading } = useCategorias();
+
+  const categoryOptions: ComboBoxItem<string>[] = (formData.type === 'income'
+    ? incomeCategories
+    : expenseCategories
+  ).map((c) => ({ label: c.name, value: c.name }));
+
   useEffect(() => {
     if (editingTransaction && visible) {
       setFormData({
@@ -66,11 +76,6 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       resetForm();
     }
   }, [editingTransaction, visible]);
-
-  const categories = {
-    income: ['Salário', 'Freelance', 'Transferência', 'Investimentos', 'Outros'],
-    expense: ['Mercado', 'Transporte', 'Lazer', 'Moradia', 'Saúde', 'Educação', 'Outros']
-  };
 
   const validateForm = (): boolean => {
     const newErrors: Partial<NewTransaction> = {};
@@ -399,31 +404,13 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           }`}>
             Categoria
           </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {categories[formData.type].map((category) => (
-              <TouchableOpacity 
-                key={category}
-                onPress={() => handleCategoryChange(category)}
-                className={`
-                  px-4 py-3 rounded-xl border-2
-                  ${formData.category === category 
-                    ? (isDark ? 'bg-blue-600 border-blue-600' : 'bg-blue-600 border-blue-600')
-                    : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
-                  }
-                `}
-              >
-                <Text className={`
-                  font-medium
-                  ${formData.category === category 
-                    ? 'text-white' 
-                    : (isDark ? 'text-gray-300' : 'text-gray-700')
-                  }
-                `}>
-                  {category}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <ComboBox
+            items={categoryOptions}
+            selectedValue={formData.category || null}
+            onValueChange={(val: string) => handleCategoryChange(val)}
+            placeholder={catLoading ? 'Carregando...' : 'Selecione a categoria'}
+            disabled={catLoading || categoryOptions.length === 0}
+          />
           {errors.category && (
             <Text className="text-red-500 text-sm mt-1">{errors.category}</Text>
           )}

@@ -1,9 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import React, { useState } from 'react';
-import { Dimensions, Modal, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+    Dimensions,
+    Modal,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { DateFilter } from '../../hooks/useTransactions';
 import { useTheme } from '../../services/ThemeContext';
+import { fetchUserTransactions } from '../../services/transacoesService';
+import ComboBox, { ComboBoxItem } from '../atoms/ComboBox';
 
 interface TransactionFilterModalProps {
   visible: boolean;
@@ -11,6 +19,23 @@ interface TransactionFilterModalProps {
   onApply: (filter: DateFilter) => void;
   currentFilter: DateFilter;
 }
+
+type FilterKind = 'all' | 'year' | 'month' | 'day';
+
+const monthsPt: string[] = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+];
 
 const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
   visible,
@@ -21,111 +46,407 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const screenWidth = Dimensions.get('window').width;
+  const screenHeight = Dimensions.get('window').height;
   const isMobile = screenWidth < 768;
 
-  const [localFilter, setLocalFilter] = useState<DateFilter>(currentFilter);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [filterKind, setFilterKind] = useState<FilterKind>('month');
+  const [earliestYear, setEarliestYear] = useState<number>(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // 0-indexed
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
-  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (event.type === 'set' && selectedDate) {
-      if (localFilter.type === 'day') {
-        setLocalFilter({ type: 'day', date: selectedDate });
-      } else if (localFilter.type === 'month') {
-        setLocalFilter({ type: 'month', year: selectedDate.getFullYear(), month: selectedDate.getMonth() });
-      } else if (localFilter.type === 'year') {
-        setLocalFilter({ type: 'year', year: selectedDate.getFullYear() });
+  // Carrega anos disponíveis
+  useEffect(() => {
+    if (!visible) return;
+    (async () => {
+      try {
+        const transactions = await fetchUserTransactions();
+        if (transactions.length === 0) {
+          setEarliestYear(new Date().getFullYear());
+          return;
+        }
+        const firstDate = transactions.reduce((prev, curr) => {
+          const dPrev = new Date(prev.date);
+          const dCurr = new Date(curr.date);
+          return dCurr < dPrev ? curr : prev;
+        });
+        const minYear = new Date(firstDate.date).getFullYear();
+        setEarliestYear(minYear);
+      } catch (err) {
+        console.error('Erro ao buscar transações para anos:', (err as any).message);
       }
+    })();
+  }, [visible]);
+
+  // Quando modal abrir, sincroniza estados com currentFilter
+  useEffect(() => {
+    if (!visible) return;
+    switch (currentFilter.type) {
+      case 'all':
+        setFilterKind('all');
+        setSelectedYear(null);
+        setSelectedMonth(null);
+        setSelectedDay(null);
+        break;
+      case 'year':
+        setFilterKind('year');
+        setSelectedYear(currentFilter.year);
+        setSelectedMonth(null);
+        setSelectedDay(null);
+        break;
+      case 'month':
+        setFilterKind('month');
+        setSelectedYear(currentFilter.year);
+        setSelectedMonth(currentFilter.month);
+        setSelectedDay(null);
+        break;
+      case 'day':
+        setFilterKind('day');
+        setSelectedYear(currentFilter.date.getFullYear());
+        setSelectedMonth(currentFilter.date.getMonth());
+        setSelectedDay(currentFilter.date.getDate());
+        break;
     }
+  }, [currentFilter, visible]);
+
+  const years: ComboBoxItem<number>[] = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const arr: ComboBoxItem<number>[] = [];
+    for (let y = earliestYear; y <= currentYear; y++) {
+      arr.push({ label: String(y), value: y });
+    }
+    return arr;
+  }, [earliestYear]);
+
+  const months: ComboBoxItem<number>[] = monthsPt.map((m, idx) => ({
+    label: m,
+    value: idx,
+  }));
+
+  const days: ComboBoxItem<number>[] = useMemo(() => {
+    if (selectedYear === null || selectedMonth === null) return [];
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    return Array.from({ length: daysInMonth }, (_, i) => ({
+      label: String(i + 1).padStart(2, '0'),
+      value: i + 1,
+    }));
+  }, [selectedYear, selectedMonth]);
+
+  const canApply = useMemo(() => {
+    if (filterKind === 'all') return true;
+    if (filterKind === 'year') return selectedYear !== null;
+    if (filterKind === 'month') return selectedYear !== null && selectedMonth !== null;
+    if (filterKind === 'day')
+      return (
+        selectedYear !== null &&
+        selectedMonth !== null &&
+        selectedDay !== null
+      );
+    return false;
+  }, [filterKind, selectedYear, selectedMonth, selectedDay]);
+
+  const applyFilter = () => {
+    if (!canApply) return;
+    let filter: DateFilter = { type: 'all' };
+    switch (filterKind) {
+      case 'all':
+        filter = { type: 'all' };
+        break;
+      case 'year':
+        filter = { type: 'year', year: selectedYear as number };
+        break;
+      case 'month':
+        filter = {
+          type: 'month',
+          year: selectedYear as number,
+          month: selectedMonth as number,
+        };
+        break;
+      case 'day':
+        filter = {
+          type: 'day',
+          date: new Date(
+            selectedYear as number,
+            selectedMonth as number,
+            selectedDay as number
+          ),
+        };
+        break;
+    }
+    onApply(filter);
   };
 
-  const getDisplayDate = (): string => {
-    switch(localFilter.type) {
-      case 'day': return localFilter.date.toLocaleDateString('pt-BR');
-      case 'month': return new Date(localFilter.year, localFilter.month).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-      case 'year': return String(localFilter.year);
-      default: return 'Todas';
-    }
-  };
+  if (!visible) return null;
 
   const renderContent = () => (
     <>
+      {/* Tipo de filtro */}
       <View className="mb-6">
-        <Text className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-          Filtrar por
+        <Text
+          className={`text-sm font-semibold mb-3 ${
+            isDark ? 'text-gray-300' : 'text-gray-700'
+          }`}
+        >
+          Tipo de Filtro
         </Text>
-        <View className="flex-row space-x-2">
-          {['month', 'year', 'day', 'all'].map((type) => (
+        <View className="flex-row flex-wrap gap-3">
+          {([
+            { kind: 'all', label: 'Tudo' },
+            { kind: 'year', label: 'Ano' },
+            { kind: 'month', label: 'Mês' },
+            { kind: 'day', label: 'Dia' },
+          ] as { kind: FilterKind; label: string }[]).map((opt) => (
             <TouchableOpacity
-              key={type}
-              onPress={() => {
-                if (type === 'all') setLocalFilter({ type: 'all' });
-                else if (type === 'day') setLocalFilter({ type: 'day', date: new Date() });
-                else if (type === 'month') setLocalFilter({ type: 'month', year: new Date().getFullYear(), month: new Date().getMonth() });
-                else if (type === 'year') setLocalFilter({ type: 'year', year: new Date().getFullYear() });
-              }}
-              className={`flex-1 py-2 rounded-lg border-2 ${
-                localFilter.type === type
+              key={opt.kind}
+              onPress={() => setFilterKind(opt.kind)}
+              className={`px-4 py-3 rounded-xl border-2 ${
+                filterKind === opt.kind
                   ? 'border-blue-500 bg-blue-500/20'
-                  : isDark ? 'border-gray-600' : 'border-gray-300'
+                  : isDark
+                  ? 'border-gray-600 bg-gray-800'
+                  : 'border-gray-300 bg-gray-50'
               }`}
             >
-              <Text className={`text-center font-medium ${
-                localFilter.type === type ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                {{'day':'Dia', 'month':'Mês', 'year':'Ano', 'all':'Tudo'}[type]}
+              <Text
+                className={`text-sm font-medium ${
+                  filterKind === opt.kind
+                    ? 'text-blue-600'
+                    : isDark
+                    ? 'text-gray-300'
+                    : 'text-gray-700'
+                }`}
+              >
+                {opt.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
-      
-      {localFilter.type !== 'all' && (
+
+      {/* Seletor de Ano */}
+      {(filterKind === 'year' || filterKind === 'month' || filterKind === 'day') && (
         <View className="mb-6">
-          <Text className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            Selecione o período
-          </Text>
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            className={`p-4 rounded-xl border-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}
+          <Text
+            className={`text-sm font-semibold mb-3 ${
+              isDark ? 'text-gray-300' : 'text-gray-700'
+            }`}
           >
-            <Text className={`text-center text-base ${isDark ? 'text-white' : 'text-gray-900'}`}>{getDisplayDate()}</Text>
-          </TouchableOpacity>
+            Ano
+          </Text>
+          <ComboBox
+            items={years}
+            selectedValue={selectedYear}
+            onValueChange={(val: number) => {
+              setSelectedYear(val);
+              // Ao mudar o ano, pode resetar dependentes
+              if (filterKind === 'day') {
+                setSelectedMonth(null);
+                setSelectedDay(null);
+              } else if (filterKind === 'month') {
+                setSelectedMonth(null);
+              }
+            }}
+            placeholder="Selecione o ano"
+          />
         </View>
       )}
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={localFilter.type === 'day' ? localFilter.date : new Date(localFilter.type === 'month' ? localFilter.year : (localFilter.type === 'year' ? localFilter.year : new Date().getFullYear()), localFilter.type === 'month' ? localFilter.month : new Date().getMonth())}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
+      {/* Seletor de Mês */}
+      {(filterKind === 'month' || filterKind === 'day') && (
+        <View className="mb-6">
+          <Text
+            className={`text-sm font-semibold mb-3 ${
+              isDark ? 'text-gray-300' : 'text-gray-700'
+            }`}
+          >
+            Mês
+          </Text>
+          <ComboBox
+            items={months}
+            selectedValue={selectedMonth}
+            onValueChange={(val: number) => {
+              setSelectedMonth(val);
+              if (filterKind === 'day') {
+                setSelectedDay(null);
+              }
+            }}
+            placeholder="Selecione o mês"
+            disabled={selectedYear === null}
+          />
+        </View>
+      )}
+
+      {/* Seletor de Dia */}
+      {filterKind === 'day' && (
+        <View className="mb-6">
+          <Text
+            className={`text-sm font-semibold mb-3 ${
+              isDark ? 'text-gray-300' : 'text-gray-700'
+            }`}
+          >
+            Dia
+          </Text>
+          <ComboBox
+            items={days}
+            selectedValue={selectedDay}
+            onValueChange={(val: number) => setSelectedDay(val)}
+            placeholder="Selecione o dia"
+            disabled={selectedYear === null || selectedMonth === null}
+          />
+        </View>
       )}
     </>
   );
 
-  return (
-    <Modal visible={visible} transparent={true} animationType={isMobile ? "slide" : "fade"} onRequestClose={onClose}>
-      <View className={`flex-1 justify-center items-center ${isMobile ? 'justify-end' : 'bg-black/50'}`}>
-        <View className={`${isMobile ? 'w-full rounded-t-3xl' : 'w-[400px] rounded-2xl shadow-2xl'} ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
-          <View className={`flex-row items-center justify-between p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Filtrar Transações</Text>
-            <TouchableOpacity onPress={onClose}><Ionicons name="close" size={24} color={isDark ? '#9CA3AF' : '#6B7280'} /></TouchableOpacity>
-          </View>
-          
-          <View className="p-6">{renderContent()}</View>
+  const renderMobileModal = () => (
+    <View className="flex-1 bg-black bg-opacity-50 justify-end">
+      <View
+        className={`rounded-t-3xl min-h-[60vh] max-h-[90vh] ${
+          isDark ? 'bg-gray-900' : 'bg-white'
+        }`}
+      >
+        {/* Header */}
+        <View
+          className={`flex-row items-center justify-between p-6 border-b ${
+            isDark ? 'border-gray-700' : 'border-gray-200'
+          }`}
+        >
+          <Text
+            className={`text-xl font-bold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}
+          >
+            Filtrar Transações
+          </Text>
+          <TouchableOpacity
+            onPress={onClose}
+            className={`w-10 h-10 rounded-full items-center justify-center ${
+              isDark ? 'bg-gray-800' : 'bg-gray-100'
+            }`}
+          >
+            <Ionicons name="close" size={20} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          </TouchableOpacity>
+        </View>
 
-          <View className={`p-6 border-t flex-row space-x-4 ${isDark ? 'border-gray-700' : 'border-gray-200'} ${isMobile ? '' : 'justify-end'}`}>
-            <TouchableOpacity onPress={onClose} className={`flex-1 py-3 rounded-xl border-2 ${isDark ? 'border-gray-600' : 'border-gray-300'} ${!isMobile && 'flex-none px-6'}`}>
-              <Text className={`text-center font-semibold text-base ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => onApply(localFilter)} className={`flex-1 py-3 rounded-xl bg-blue-600 ${!isMobile && 'flex-none px-6'}`}>
-              <Text className="text-white font-semibold text-base text-center">Aplicar Filtro</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Content */}
+        <ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
+          {renderContent()}
+        </ScrollView>
+
+        {/* Footer */}
+        <View
+          className={`p-6 border-t flex-row space-x-4 ${
+            isDark ? 'border-gray-700' : 'border-gray-200'
+          }`}
+        >
+          <TouchableOpacity
+            onPress={onClose}
+            className={`flex-1 py-4 rounded-xl border-2 ${
+              isDark ? 'border-gray-600' : 'border-gray-300'
+            }`}
+          >
+            <Text
+              className={`text-center font-semibold text-base ${
+                isDark ? 'text-gray-300' : 'text-gray-700'
+              }`}
+            >
+              Cancelar
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={applyFilter}
+            className={`flex-1 py-4 rounded-xl ${
+              canApply ? 'bg-blue-600' : isDark ? 'bg-gray-700' : 'bg-gray-300'
+            }`}
+            disabled={!canApply}
+          >
+            <Text className="text-center font-semibold text-base text-white">
+              Aplicar
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
+    </View>
+  );
+
+  const renderWebModal = () => (
+    <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-6">
+      <View
+        className={`rounded-2xl shadow-2xl ${isDark ? 'bg-gray-900' : 'bg-white'}`}
+        style={{ width: Math.min(screenWidth * 0.85, 600), maxHeight: screenHeight * 0.85 }}
+      >
+        {/* Header */}
+        <View
+          className={`flex-row items-center justify-between p-6 border-b ${
+            isDark ? 'border-gray-700' : 'border-gray-200'
+          }`}
+        >
+          <Text
+            className={`text-2xl font-bold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}
+          >
+            Filtrar Transações
+          </Text>
+          <TouchableOpacity
+            onPress={onClose}
+            className={`w-10 h-10 rounded-full items-center justify-center ${
+              isDark ? 'bg-gray-800' : 'bg-gray-100'
+            }`}
+          >
+            <Ionicons name="close" size={20} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Content */}
+        <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
+          {renderContent()}
+        </ScrollView>
+
+        {/* Footer */}
+        <View
+          className={`p-6 border-t flex-row space-x-4 justify-end ${
+            isDark ? 'border-gray-700' : 'border-gray-200'
+          }`}
+        >
+          <TouchableOpacity
+            onPress={onClose}
+            className={`px-8 py-3 rounded-xl border-2 ${
+              isDark ? 'border-gray-600' : 'border-gray-300'
+            }`}
+          >
+            <Text
+              className={`font-semibold text-base ${
+                isDark ? 'text-gray-300' : 'text-gray-700'
+              }`}
+            >
+              Cancelar
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={applyFilter}
+            className={`px-8 py-3 rounded-xl ${
+              canApply ? 'bg-blue-600' : isDark ? 'bg-gray-700' : 'bg-gray-300'
+            }`}
+            disabled={!canApply}
+          >
+            <Text className="text-white font-semibold text-base">Aplicar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType={isMobile ? 'slide' : 'fade'}
+      onRequestClose={onClose}
+    >
+      {isMobile ? renderMobileModal() : renderWebModal()}
     </Modal>
   );
 };
