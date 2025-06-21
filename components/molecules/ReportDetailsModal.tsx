@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useScreenSize } from '../../hooks/useScreenSize';
 import { useTheme } from '../../services/ThemeContext';
 
 interface ReportItem {
@@ -30,6 +31,7 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
   item,
 }) => {
   const { theme } = useTheme();
+  const { isMobile } = useScreenSize();
   const isDark = theme === 'dark';
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
@@ -37,16 +39,19 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
   if (!item) return null;
 
   const getIcon = (type: 'alert' | 'tip') => {
+    const iconSize = isMobile ? 24 : 32;
+    const containerSize = isMobile ? 'w-12 h-12' : 'w-16 h-16';
+    
     if (type === 'alert') {
       return (
-        <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center">
-          <Ionicons name="warning" size={32} color="#DC2626" />
+        <View className={`${containerSize} bg-red-100 rounded-full items-center justify-center`}>
+          <Ionicons name="warning" size={iconSize} color="#DC2626" />
         </View>
       );
     } else {
       return (
-        <View className="w-16 h-16 bg-yellow-100 rounded-full items-center justify-center">
-          <Ionicons name="bulb" size={32} color="#D97706" />
+        <View className={`${containerSize} bg-yellow-100 rounded-full items-center justify-center`}>
+          <Ionicons name="bulb" size={iconSize} color="#D97706" />
         </View>
       );
     }
@@ -105,70 +110,59 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
 
   const recommendations = getRecommendations(item);
 
-  return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      {/* Fundo desfocado */}
-      <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-4">
-        {/* Container do modal centralizado */}
-        <View 
-          className={`
-            rounded-2xl shadow-2xl
-            ${isDark ? 'bg-gray-800' : 'bg-white'}
-          `}
-          style={{
-            width: Math.min(screenWidth * 0.9, 500),
-            maxHeight: screenHeight * 0.8
-          }}
-        >
-          {/* Header */}
-          <View className={`
-            flex-row items-center justify-between p-6 border-b
-            ${isDark ? 'border-gray-700' : 'border-gray-200'}
-          `}>
-            <Text className={`text-xl font-bold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>
-              Detalhes
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              className={`
-                w-8 h-8 rounded-full items-center justify-center
-                ${isDark ? 'bg-gray-700' : 'bg-gray-100'}
-              `}
-            >
-              <Text className={`text-lg font-bold ${
-                isDark ? 'text-gray-300' : 'text-gray-600'
-              }`}>
-                ×
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Conteúdo */}
-          <ScrollView 
-            className="flex-1 px-6 py-4"
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: screenHeight * 0.8 - 160 }}
+  // Layout mobile responsivo
+  const renderMobileModal = () => (
+    <View className="flex-1 bg-black bg-opacity-50 justify-end">
+      <View 
+        className={`
+          rounded-t-3xl min-h-[70vh] max-h-[95vh]
+          ${isDark ? 'bg-gray-900' : 'bg-white'}
+        `}
+      >
+        {/* Header */}
+        <View className={`
+          flex-row items-center justify-between p-4 border-b
+          ${isDark ? 'border-gray-700' : 'border-gray-200'}
+        `}>
+          <Text className={`text-lg font-bold ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            Detalhes do Relatório
+          </Text>
+          <TouchableOpacity
+            onPress={onClose}
+            className={`
+              w-8 h-8 rounded-full items-center justify-center
+              ${isDark ? 'bg-gray-800' : 'bg-gray-100'}
+            `}
           >
-            {/* Ícone e Título */}
-            <View className="items-center mb-6">
-              {getIcon(item.type)}
-              <Text className={`text-lg font-semibold mt-4 text-center ${
+            <Text className={`text-lg font-bold ${
+              isDark ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              ×
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Conteúdo */}
+        <ScrollView 
+          className="flex-1 px-4 py-3"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Ícone e Título compacto para mobile */}
+          <View className="flex-row items-center mb-4">
+            {getIcon(item.type)}
+            <View className="flex-1 ml-3">
+              <Text className={`text-base font-semibold ${
                 isDark ? 'text-white' : 'text-gray-900'
-              }`}>
+              }`} numberOfLines={2}>
                 {item.title}
               </Text>
               {item.category && (
-                <View className={`px-3 py-1 rounded-full mt-2 ${
+                <View className={`px-2 py-1 rounded-full mt-1 self-start ${
                   item.type === 'alert' ? 'bg-red-100' : 'bg-yellow-100'
                 }`}>
-                  <Text className={`text-sm font-medium ${
+                  <Text className={`text-xs font-medium ${
                     item.type === 'alert' ? 'text-red-700' : 'text-yellow-700'
                   }`}>
                     {item.category}
@@ -176,68 +170,220 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
                 </View>
               )}
             </View>
+          </View>
 
-            {/* Descrição */}
-            {item.description && (
-              <View className={`p-4 rounded-xl mb-6 ${
-                isDark ? 'bg-gray-700' : 'bg-gray-50'
+          {/* Descrição */}
+          {item.description && (
+            <View className={`p-3 rounded-xl mb-4 ${
+              isDark ? 'bg-gray-800' : 'bg-gray-50'
+            }`}>
+              <Text className={`text-sm leading-5 ${
+                isDark ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                <Text className={`text-base leading-6 ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
+                {item.description}
+              </Text>
+            </View>
+          )}
+
+          {/* Recomendações */}
+          <View className="mb-4">
+            <Text className={`text-base font-semibold mb-3 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              {item.type === 'alert' ? 'Como resolver:' : 'Próximos passos:'}
+            </Text>
+            <View className="mb-3">
+              {recommendations.map((recommendation, index) => (
+                <View 
+                  key={index}
+                  className={`
+                    flex-row items-start p-3 rounded-xl
+                    ${index > 0 ? 'mt-2' : ''}
+                    ${isDark ? 'bg-gray-800' : 'bg-gray-50'}
+                  `}
+                >
+                  <View className={`w-5 h-5 rounded-full items-center justify-center mr-3 mt-0.5 ${
+                    item.type === 'alert' ? 'bg-red-100' : 'bg-yellow-100'
+                  }`}>
+                    <Text className={`text-xs font-bold ${
+                      item.type === 'alert' ? 'text-red-600' : 'text-yellow-600'
+                    }`}>
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <Text className={`flex-1 text-sm leading-5 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    {recommendation}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Footer com botão */}
+        <View className={`
+          p-4 border-t
+          ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'}
+        `}>
+          <TouchableOpacity
+            onPress={onClose}
+            className={`py-3 px-4 rounded-xl items-center ${
+              item.type === 'alert' ? 'bg-red-600' : 'bg-yellow-600'
+            }`}
+          >
+            <Text className="text-white font-semibold text-base">
+              Entendi
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  // Layout web/desktop responsivo
+  const renderWebModal = () => (
+    <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-6">
+      <View 
+        className={`
+          rounded-2xl shadow-2xl
+          ${isDark ? 'bg-gray-800' : 'bg-white'}
+        `}
+        style={{
+          width: Math.min(screenWidth * 0.9, 550),
+          maxHeight: screenHeight * 0.85
+        }}
+      >
+        {/* Header */}
+        <View className={`
+          flex-row items-center justify-between p-6 border-b
+          ${isDark ? 'border-gray-700' : 'border-gray-200'}
+        `}>
+          <Text className={`text-xl font-bold ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            Detalhes do Relatório
+          </Text>
+          <TouchableOpacity
+            onPress={onClose}
+            className={`
+              w-8 h-8 rounded-full items-center justify-center
+              ${isDark ? 'bg-gray-700' : 'bg-gray-100'}
+            `}
+          >
+            <Text className={`text-lg font-bold ${
+              isDark ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              ×
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Conteúdo */}
+        <ScrollView 
+          className="flex-1 px-6 py-4"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Ícone e Título */}
+          <View className="items-center mb-6">
+            {getIcon(item.type)}
+            <Text className={`text-lg font-semibold mt-4 text-center ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              {item.title}
+            </Text>
+            {item.category && (
+              <View className={`px-3 py-1 rounded-full mt-2 ${
+                item.type === 'alert' ? 'bg-red-100' : 'bg-yellow-100'
+              }`}>
+                <Text className={`text-sm font-medium ${
+                  item.type === 'alert' ? 'text-red-700' : 'text-yellow-700'
                 }`}>
-                  {item.description}
+                  {item.category}
                 </Text>
               </View>
             )}
+          </View>
 
-            {/* Recomendações */}
-            <View className="mb-6">
-              <Text className={`text-lg font-semibold mb-4 ${
-                isDark ? 'text-white' : 'text-gray-900'
+          {/* Descrição */}
+          {item.description && (
+            <View className={`p-4 rounded-xl mb-6 ${
+              isDark ? 'bg-gray-700' : 'bg-gray-50'
+            }`}>
+              <Text className={`text-base leading-6 ${
+                isDark ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                {item.type === 'alert' ? 'Como resolver:' : 'Próximos passos:'}
+                {item.description}
               </Text>
-              <View className="space-y-3">
-                {recommendations.map((recommendation, index) => (
-                  <View key={index} className="flex-row items-start">
-                    <View className={`w-6 h-6 rounded-full items-center justify-center mr-3 mt-1 ${
-                      item.type === 'alert' ? 'bg-red-100' : 'bg-yellow-100'
+            </View>
+          )}
+
+          {/* Recomendações */}
+          <View className="mb-6">
+            <Text className={`text-lg font-semibold mb-4 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              {item.type === 'alert' ? 'Como resolver:' : 'Próximos passos:'}
+            </Text>
+            <View className="mb-3">
+              {recommendations.map((recommendation, index) => (
+                <View 
+                  key={index}
+                  className={`
+                    flex-row items-start p-4 rounded-xl
+                    ${index > 0 ? 'mt-3' : ''}
+                    ${isDark ? 'bg-gray-750' : 'bg-gray-50'}
+                  `}
+                >
+                  <View className={`w-6 h-6 rounded-full items-center justify-center mr-3 mt-1 ${
+                    item.type === 'alert' ? 'bg-red-100' : 'bg-yellow-100'
+                  }`}>
+                    <Text className={`text-xs font-bold ${
+                      item.type === 'alert' ? 'text-red-600' : 'text-yellow-600'
                     }`}>
-                      <Text className={`text-xs font-bold ${
-                        item.type === 'alert' ? 'text-red-600' : 'text-yellow-600'
-                      }`}>
-                        {index + 1}
-                      </Text>
-                    </View>
-                    <Text className={`flex-1 text-base leading-6 ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      {recommendation}
+                      {index + 1}
                     </Text>
                   </View>
-                ))}
-              </View>
+                  <Text className={`flex-1 text-base leading-6 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    {recommendation}
+                  </Text>
+                </View>
+              ))}
             </View>
-          </ScrollView>
-
-          {/* Footer com botão */}
-          <View className={`
-            p-6 border-t
-            ${isDark ? 'border-gray-700' : 'border-gray-200'}
-          `}>
-            <TouchableOpacity
-              onPress={onClose}
-              className={`p-4 rounded-xl items-center ${
-                item.type === 'alert' ? 'bg-red-600' : 'bg-yellow-600'
-              }`}
-            >
-              <Text className="text-white font-semibold text-base">
-                Entendi
-              </Text>
-            </TouchableOpacity>
           </View>
+        </ScrollView>
+
+        {/* Footer com botão */}
+        <View className={`
+          p-6 border-t
+          ${isDark ? 'border-gray-700' : 'border-gray-200'}
+        `}>
+          <TouchableOpacity
+            onPress={onClose}
+            className={`p-4 rounded-xl items-center ${
+              item.type === 'alert' ? 'bg-red-600' : 'bg-yellow-600'
+            }`}
+          >
+            <Text className="text-white font-semibold text-base">
+              Entendi
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
+    </View>
+  );
+
+  return (
+    <Modal
+      animationType={isMobile ? "slide" : "fade"}
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      {isMobile ? renderMobileModal() : renderWebModal()}
     </Modal>
   );
 };

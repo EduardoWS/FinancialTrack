@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from "react";
-import { RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import LoadingSpinner from '../../components/atoms/LoadingSpinner';
 import Toast from '../../components/atoms/Toast';
 import Header from '../../components/Header';
@@ -13,6 +13,9 @@ type FilterType = 'all' | 'alerts' | 'tips' | 'unread';
 const RelatoriosScreen = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { width } = Dimensions.get('window');
+  const isMobile = width < 768; // Definição de ponto de quebra para mobile
+  const isVeryNarrow = width < 400;
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
@@ -100,7 +103,10 @@ const RelatoriosScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveFilter(filter)}
         className={`
-          px-4 py-2 rounded-full border-2 min-w-[80px] items-center mr-3
+          ${isMobile 
+            ? 'flex-1 py-2 px-1 rounded-lg border items-center mx-1'
+            : 'px-4 py-2 rounded-full border-2 min-w-[80px] items-center mr-3'
+          }
           ${isActive 
             ? (isDark ? 'bg-blue-600 border-blue-600' : 'bg-blue-600 border-blue-600')
             : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
@@ -108,7 +114,8 @@ const RelatoriosScreen = () => {
         `}
       >
         <Text className={`
-          font-medium text-sm
+          font-medium text-center
+          ${isMobile ? 'text-xs' : 'text-sm'}
           ${isActive 
             ? 'text-white' 
             : (isDark ? 'text-gray-300' : 'text-gray-700')
@@ -149,6 +156,8 @@ const RelatoriosScreen = () => {
         
         <View className="flex-1 ml-3">
           <Text className={`text-base font-medium leading-5 ${
+            isVeryNarrow ? 'text-sm' : 'text-base'
+          } ${
             isDark ? 'text-white' : 'text-gray-900'
           }`}>
             {item.title}
@@ -199,46 +208,87 @@ const RelatoriosScreen = () => {
       <Header title="Relatórios e Dicas" />
       
       <View className="flex-1 p-4">
-        {/* Filtros e Botão Marcar todos como lidos */}
-        <View className="flex-row justify-between items-center mb-6">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="flex-1"
-          >
-            <FilterButton 
-              filter="all" 
-              label="Todos" 
-              count={reports.length}
-            />
-            <FilterButton 
-              filter="alerts" 
-              label="Alertas" 
-              count={alertReports.length}
-            />
-            <FilterButton 
-              filter="tips" 
-              label="Dicas" 
-              count={tipReports.length}
-            />
-            <FilterButton 
-              filter="unread" 
-              label="Não lidos" 
-              count={unreadReports.length}
-            />
-          </ScrollView>
-          
-          {unreadReports.length > 0 && (
-            <TouchableOpacity
-              onPress={handleMarkAllAsRead}
-              className="bg-blue-600 px-4 py-2 rounded-lg ml-3"
+        {isMobile ? (
+          // Layout para Mobile
+          <View className="mb-6">
+            <View className="flex-row mb-3">
+              <FilterButton 
+                filter="all" 
+                label="Todos" 
+                count={reports.length}
+              />
+              <FilterButton 
+                filter="unread" 
+                label="Não lidos" 
+                count={unreadReports.length}
+              />
+            </View>
+            {/* <View className="flex-row mb-3">
+              <FilterButton 
+                filter="alerts" 
+                label="Alertas" 
+                count={alertReports.length}
+              />
+              <FilterButton 
+                filter="tips" 
+                label="Dicas" 
+                count={tipReports.length}
+              />
+            </View> */}
+            
+            {unreadReports.length > 0 && (
+              <TouchableOpacity
+                onPress={handleMarkAllAsRead}
+                className="bg-blue-600 py-2 rounded-lg"
+              >
+                <Text className="text-white font-medium text-center text-sm py-2">
+                  Marcar todos como lidos
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          // Layout para Web (Desktop)
+          <View className="flex-row justify-between items-center mb-6">
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              className="flex-1"
             >
-              <Text className="text-white font-medium text-sm">
-                Marcar todos como lidos
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+              <FilterButton 
+                filter="all" 
+                label="Todos" 
+                count={reports.length}
+              />
+              {/* <FilterButton 
+                filter="alerts" 
+                label="Alertas" 
+                count={alertReports.length}
+              />
+              <FilterButton 
+                filter="tips" 
+                label="Dicas" 
+                count={tipReports.length}
+              /> */}
+              <FilterButton 
+                filter="unread" 
+                label="Não lidos" 
+                count={unreadReports.length}
+              />
+            </ScrollView>
+            
+            {unreadReports.length > 0 && (
+              <TouchableOpacity
+                onPress={handleMarkAllAsRead}
+                className="bg-blue-600 px-4 py-2 rounded-lg ml-3"
+              >
+                <Text className="text-white font-medium text-sm py-2">
+                  Marcar todos como lidos
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Lista de Relatórios e Dicas */}
         {loading ? (

@@ -1,45 +1,65 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
-import { WeeklyActivity } from '../../data/mockData';
 import { useScreenSize } from '../../hooks/useScreenSize';
 import { useTheme } from '../../services/ThemeContext';
 import Card from '../atoms/Card';
 
-interface WeeklyActivityChartProps {
-  data: WeeklyActivity[];
+interface MonthlyActivity {
+  month: string;
+  income: number;
+  expense: number;
 }
 
-const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
+interface MonthlyActivityChartProps {
+  data: MonthlyActivity[];
+}
+
+const MonthlyActivityChart: React.FC<MonthlyActivityChartProps> = ({ data }) => {
   const { theme } = useTheme();
   const { isMobile } = useScreenSize();
   const isDark = theme === 'dark';
   const [containerWidth, setContainerWidth] = useState(0);
 
-  const barData = data.map(item => ({
-    stacks: [
-      { value: item.income, color: '#34D399' }, // Verde para renda
-      { value: item.expense, color: '#F87171' }, // Vermelho para despesa
-    ],
-    label: item.day,
-  }));
+  const barData = data.flatMap(item => [
+    {
+      value: item.income,
+      label: item.month,
+      labelTextStyle: { color: isDark ? '#A0AEC0' : '#718096', fontSize: 10 },
+      labelWidth: isMobile ? 20 : 36, // garante espaço suficiente para a abreviação do mês
+      spacing: 2, // pequeno espaço entre as barras do mesmo mês
+      frontColor: '#34D399',
+    },
+    {
+      value: item.expense,
+      frontColor: '#F87171',
+    },
+  ]);
+
+  // Valor máximo dinâmico (com padding de 10%)
+  const rawMax = Math.max(...data.flatMap(d => [d.income, d.expense]));
+  const maxValue = rawMax > 0 ? Math.ceil(rawMax * 1.1) : 100; // fallback 100
 
   // Calcula dimensões dinamicamente baseado no container
   const calculateDimensions = () => {
     if (containerWidth <= 0) {
-      return { spacing: 30, barWidth: 25, initialSpacing: 15, endSpacing: 15 };
+      // valores default (mantêm altura/largura anteriores)
+      return { spacing: 30, barWidth: 12, initialSpacing: 15, endSpacing: 15 };
     }
-    
-    const numBars = data.length;
+
+    const numGroups = data.length; // dias
+    const barsPerGroup = 2; // receita + despesa
+    const totalBars = numGroups * barsPerGroup;
+
     const availableWidth = containerWidth - 40; // Margem para labels e eixos
-    const totalSpacing = availableWidth * 0.6; // 60% para espaçamentos
+    const totalSpacing = availableWidth * 0.6; // 60% para espaçamentos entre grupos
     const totalBarWidth = availableWidth * 0.4; // 40% para as barras
-    
-    const spacing = Math.max(20, totalSpacing / (numBars + 1));
-    const barWidth = Math.max(20, totalBarWidth / numBars);
+
+    const spacing = Math.max(20, totalSpacing / (numGroups + 1));
+    const barWidth = Math.max(6, totalBarWidth / totalBars);
     const initialSpacing = spacing * 0.4;
     const endSpacing = spacing * 0.6;
-    
+
     return { spacing, barWidth, initialSpacing, endSpacing };
   };
 
@@ -51,11 +71,11 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
 
   return (
     <Card 
-      className="p-4 h-full" 
+      className="pt-4 h-full" 
       style={cardHeight ? { height: cardHeight } : {}}
     >
       <Text className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-        Atividade Semanal
+        Atividade – últimos 6 meses
       </Text>
       <View 
         className={isMobile ? '' : 'flex-1'}
@@ -66,18 +86,20 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
       >
         {containerWidth > 0 && (
           <BarChart
-            stackData={barData}
+            data={barData}
             height={chartHeight}
             spacing={spacing}
             barWidth={barWidth}
             initialSpacing={initialSpacing}
             endSpacing={endSpacing}
-            maxValue={800}
+            maxValue={maxValue}
             yAxisTextStyle={{ color: isDark ? '#A0AEC0' : '#718096' }}
-            xAxisLabelTextStyle={{ color: isDark ? '#A0AEC0' : '#718096' }}
+            xAxisLabelTextStyle={{ color: isDark ? '#A0AEC0' : '#718096', fontSize: 10 }}
             noOfSections={4}
             rulesColor={isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)"}
             isAnimated
+            roundedTop
+            roundedBottom
             showReferenceLine1={false}
             showReferenceLine2={false}
             showReferenceLine3={false}
@@ -99,4 +121,4 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({ data }) => {
   );
 };
 
-export default WeeklyActivityChart;
+export default MonthlyActivityChart;

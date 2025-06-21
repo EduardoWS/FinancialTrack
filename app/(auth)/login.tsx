@@ -2,7 +2,6 @@ import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../components/atoms/Button';
-import { errorToast } from '../../components/atoms/custom-toasts';
 import { Input } from '../../components/atoms/Input';
 import { Logo } from '../../components/atoms/Logo';
 import { useAuth } from '../../services/AuthContext';
@@ -11,6 +10,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [errors, setErrors] = useState<{ email?: string; senha?: string }>({});
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { login, isLoading } = useAuth();
 
   const validateForm = () => {
@@ -33,6 +33,7 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
+    setLoginError(null); // Limpa erros anteriores
     if (!validateForm()) {
       return;
     }
@@ -42,7 +43,7 @@ export default function LoginScreen() {
     if (result.success) {
       router.replace('/dashboard');
     } else {
-      errorToast(result.error || 'Ocorreu um erro ao fazer login.');
+      setLoginError(result.error || 'Ocorreu um erro ao fazer login.');
     }
   };
 
@@ -59,26 +60,38 @@ export default function LoginScreen() {
           <View className="bg-white rounded-2xl p-8 shadow-lg w-full max-w-md">
             <Logo size="large" />
             
+            {/* {loginError && (
+              <View className="bg-red-100 p-3 rounded-lg mb-4">
+                <Text className="text-red-700 text-center">{loginError}</Text>
+              </View>
+            )} */}
+            
             <View className="mb-6">
               <Input
                 label="Email"
                 placeholder="Digite seu email"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setLoginError(null);
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 icon="mail"
-                error={errors.email}
+                error={errors.email || loginError}
               />
               
               <Input
                 label="Senha"
                 placeholder="Digite sua senha"
                 value={senha}
-                onChangeText={setSenha}
+                onChangeText={(text) => {
+                  setSenha(text);
+                  setLoginError(null);
+                }}
                 isPassword
                 icon="lock-closed"
-                error={errors.senha}
+                error={errors.senha || loginError}
               />
             </View>
 

@@ -1,29 +1,34 @@
 import React, { useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import Toast from '../../components/atoms/Toast';
+import { Dimensions, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Header from '../../components/Header';
+import ScreenLoader from '../../components/atoms/ScreenLoader';
+import { errorToast, successToast } from '../../components/atoms/custom-toasts';
 import AddMetaModal from '../../components/molecules/AddMetaModal';
 import AddValorMetaModal from '../../components/molecules/AddValorMetaModal';
+import ConfirmationModal from '../../components/molecules/ConfirmationModal';
 import MetaCard from '../../components/molecules/MetaCard';
 import MetaOptionsModal from '../../components/molecules/MetaOptionsModal';
-import { Meta, useMetas } from '../../hooks/useMetas';
+import { useMetas } from '../../hooks/useMetas';
 import { useTheme } from '../../services/ThemeContext';
+import { formatCurrency } from '../../services/dashboardService';
+import { Meta } from '../../services/metasService';
 
 const MetasScreen = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  
+  const { width } = Dimensions.get('window');
+  const isMobile = width < 768;
+  const isVeryNarrow = width < 400;
+
   const [modalVisible, setModalVisible] = useState(false);
   const [valorModalVisible, setValorModalVisible] = useState(false);
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [editingMeta, setEditingMeta] = useState<Meta | null>(null);
   const [selectedMeta, setSelectedMeta] = useState<Meta | null>(null);
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'ativas' | 'finalizadas'>('ativas');
 
   const {
-    metas,
     metasAtivas,
     metasFinalizadas,
     loading,
@@ -31,70 +36,106 @@ const MetasScreen = () => {
     adicionarMeta,
     atualizarMeta,
     excluirMeta,
-    adicionarValorMeta
+    adicionarValorMeta,
+    finalizarMeta,
   } = useMetas();
 
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setToastVisible(true);
-  };
-
-  const handleAddMeta = (novaMeta: Omit<Meta, 'id'>) => {
-    if (editingMeta) {
-      atualizarMeta(editingMeta.id, novaMeta);
-      showToast('Meta atualizada com sucesso!');
-    } else {
-      adicionarMeta(novaMeta);
-      showToast('Meta criada com sucesso!');
+  const handleSaveMeta = async (metaData: Omit<Meta, 'id'>) => {
+    try {
+      if (editingMeta) {
+        await atualizarMeta(editingMeta.id, metaData);
+        successToast('Meta atualizada com sucesso!');
+      } else {
+        const novaMeta = {
+          ...metaData,
+          valorAtual: 0,
+          finalizada: false,
+        };
+        await adicionarMeta(novaMeta);
+        successToast('Meta criada com sucesso!');
+      }
+      closeModal();
+    } catch (err: any) {
+      errorToast('Erro ao salvar meta', err.message);
     }
-    setEditingMeta(null);
   };
 
   const handleEditMeta = (meta: Meta) => {
     setEditingMeta(meta);
+    setOptionsModalVisible(false);
     setModalVisible(true);
   };
 
   const handleDeleteMeta = (meta: Meta) => {
-    Alert.alert(
-      'Excluir Meta',
-      `Tem certeza que deseja excluir a meta "${meta.nome}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: () => {
-            excluirMeta(meta.id);
-            showToast('Meta excluída com sucesso!');
-          }
-        }
-      ]
-    );
+    setSelectedMeta(meta);
+    setOptionsModalVisible(false);
+    setDeleteModalVisible(true);
   };
 
-  const handleAddValor = (meta: Meta) => {
-    console.log('handleAddValor chamado com meta:', meta.nome);
+  const confirmDeleteMeta = async () => {
+    if (selectedMeta) {
+      try {
+        await excluirMeta(selectedMeta.id);
+        successToast('Meta excluída com sucesso!');
+        setDeleteModalVisible(false);
+        setSelectedMeta(null);
+      } catch (err: any) {
+        errorToast('Erro ao excluir meta', err.message);
+      }
+    }
+  };
+
+  const handleOpenAddValor = (meta: Meta) => {
     setSelectedMeta(meta);
+    setOptionsModalVisible(false);
     setValorModalVisible(true);
   };
 
-  const handleConfirmAddValor = (valor: number) => {
+  const handleConfirmAddValor = async (valor: number) => {
     if (selectedMeta) {
-      adicionarValorMeta(selectedMeta.id, valor);
-      const novoProgresso = calcularProgresso(selectedMeta.valorAtual + valor, selectedMeta.valorMeta);
-      
-      if (novoProgresso >= 100) {
-        showToast(`🎉 Parabéns! Meta "${selectedMeta.nome}" foi concluída!`);
-      } else {
-        showToast(`Valor adicionado com sucesso! Progresso: ${Math.round(novoProgresso)}%`);
+      try {
+        await adicionarValorMeta(selectedMeta.id, valor);
+        const metaAtualizada = {
+          ...selectedMeta,
+          valorAtual: selectedMeta.valorAtual + valor,
+        };
+        const novoProgresso = calcularProgresso(metaAtualizada.valorAtual, metaAtualizada.valorMeta);
+
+        if (novoProgresso >= 100) {
+          successToast(`🎉 Parabéns! Meta "${selectedMeta.nome}" foi concluída!`);
+          // Não precisa chamar finalizarMeta aqui, pois a função adicionarValorMeta 
+          // já finaliza automaticamente quando o valor atinge 100%
+        } else {
+          successToast(`Valor adicionado! Progresso: ${Math.round(novoProgresso)}%`);
+        }
+        closeValorModal();
+      } catch (err: any) {
+        errorToast('Erro ao adicionar valor', err.message);
       }
     }
-    setSelectedMeta(null);
   };
 
+  const handleFinalizarMeta = async (meta: Meta) => {
+    try {
+        const valorFaltante = meta.valorMeta - meta.valorAtual;
+        
+        if (valorFaltante > 0) {
+          // Adicionar o valor faltante primeiro
+          await adicionarValorMeta(meta.id, valorFaltante);
+          successToast(`🎉 Valor faltante (${formatCurrency(valorFaltante)}) adicionado e meta "${meta.nome}" foi concluída!`);
+        } else {
+          // Meta já foi completada, apenas marcar como finalizada
+          await finalizarMeta(meta.id);
+          successToast(`Meta "${meta.nome}" marcada como finalizada!`);
+        }
+        
+        setOptionsModalVisible(false);
+    } catch(err: any) {
+      errorToast('Erro ao finalizar meta', err.message);
+    }
+  }
+
   const handleMetaClick = (meta: Meta) => {
-    console.log('Meta clicada:', meta.nome);
     setSelectedMeta(meta);
     setOptionsModalVisible(true);
   };
@@ -106,199 +147,207 @@ const MetasScreen = () => {
 
   const closeValorModal = () => {
     setValorModalVisible(false);
-    setTimeout(() => {
-      setSelectedMeta(null);
-    }, 100);
+    setSelectedMeta(null);
   };
 
   const closeOptionsModal = () => {
     setOptionsModalVisible(false);
-    // selectedMeta será limpo pelos outros métodos conforme necessário
+    setSelectedMeta(null);
   };
 
   const metasExibidas = activeTab === 'ativas' ? metasAtivas : metasFinalizadas;
 
-  const FilterButton = ({ 
-    filter, 
-    label, 
+  const FilterButton = ({
+    filter,
+    label,
     count,
-    color = 'blue'
-  }: { 
-    filter: 'ativas' | 'finalizadas'; 
-    label: string; 
+    color = 'blue',
+  }: {
+    filter: 'ativas' | 'finalizadas';
+    label: string;
     count: number;
     color?: 'blue' | 'green';
   }) => {
     const isActive = activeTab === filter;
-    
+
     return (
       <TouchableOpacity
         onPress={() => setActiveTab(filter)}
         className={`
-          px-4 py-2 rounded-full border-2 min-w-[120px] items-center mr-3
-          ${isActive 
-            ? (color === 'green' 
-              ? (isDark ? 'bg-green-600 border-green-600' : 'bg-green-600 border-green-600')
-              : (isDark ? 'bg-blue-600 border-blue-600' : 'bg-blue-600 border-blue-600')
-            )
-            : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
+          ${isMobile 
+            ? 'flex-1 py-2 px-2 rounded-lg border items-center mx-1'
+            : 'px-4 py-2 rounded-full border-2 min-w-[120px] items-center mr-3'
+          }
+          ${
+            isActive
+              ? color === 'green'
+                ? isDark
+                  ? 'bg-green-600 border-green-600'
+                  : 'bg-green-600 border-green-600'
+                : isDark
+                ? 'bg-blue-600 border-blue-600'
+                : 'bg-blue-600 border-blue-600'
+              : isDark
+              ? 'bg-transparent border-gray-600'
+              : 'bg-transparent border-gray-300'
           }
         `}
       >
-        <Text className={`
-          font-medium text-sm
-          ${isActive 
-            ? 'text-white' 
-            : (isDark ? 'text-gray-300' : 'text-gray-700')
-          }
-        `}>
+        <Text
+          className={`
+          font-medium text-center
+          ${isMobile ? 'text-sm' : 'text-sm'}
+          ${isActive ? 'text-white' : isDark ? 'text-gray-300' : 'text-gray-700'}
+        `}
+        >
           {label}
         </Text>
-        <Text className={`
+        <Text
+          className={`
           text-xs mt-1
-          ${isActive 
-            ? (color === 'green' ? 'text-green-100' : 'text-blue-100')
-            : (isDark ? 'text-gray-400' : 'text-gray-500')
+          ${
+            isActive
+              ? color === 'green'
+                ? 'text-green-100'
+                : 'text-blue-100'
+              : isDark
+              ? 'text-gray-400'
+              : 'text-gray-500'
           }
-        `}>
+        `}
+        >
           {count}
         </Text>
       </TouchableOpacity>
     );
   };
 
+  if (loading) {
+    return <ScreenLoader title="Metas Financeiras" text="Carregando suas metas..." />;
+  }
+
   return (
     <SafeAreaView className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <Header title="Metas Financeiras" />
-      
-      <View className="flex-1 p-4">
-        {/* Filtros e Botão Criar Meta */}
-        <View className="flex-row justify-between items-center mb-6">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="flex-1"
-          >
-            <FilterButton 
-              filter="ativas" 
-              label="Metas Financeiras" 
-              count={metasAtivas.length}
-              color="blue"
-            />
-            <FilterButton 
-              filter="finalizadas" 
-              label="Metas Passadas" 
-              count={metasFinalizadas.length}
-              color="green"
-            />
-          </ScrollView>
-          
-          <TouchableOpacity
-            onPress={() => setModalVisible(true)}
-            className="bg-blue-600 px-4 py-2 rounded-lg ml-3"
-          >
-            <Text className="text-white font-medium text-sm">Criar Meta</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Lista de Metas */}
+      <View className="flex-1 p-4">
+        {isMobile ? (
+          // Layout para Mobile
+          <View className="mb-6">
+            <View className="flex-row mb-3">
+              <FilterButton
+                filter="ativas"
+                label="Metas Ativas"
+                count={metasAtivas.length}
+                color="blue"
+              />
+              <FilterButton
+                filter="finalizadas"
+                label="Metas Concluídas"
+                count={metasFinalizadas.length}
+                color="green"
+              />
+            </View>
+            <TouchableOpacity 
+              onPress={() => setModalVisible(true)} 
+              className="bg-blue-600 py-3 px-4 rounded-lg"
+            >
+              <Text className="text-white font-medium text-center">
+                Criar Nova Meta
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          // Layout para Web (Desktop)
+          <View className="flex-row justify-between items-center mb-6">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
+              <FilterButton
+                filter="ativas"
+                label="Metas Ativas"
+                count={metasAtivas.length}
+                color="blue"
+              />
+              <FilterButton
+                filter="finalizadas"
+                label="Metas Concluídas"
+                count={metasFinalizadas.length}
+                color="green"
+              />
+            </ScrollView>
+            <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-blue-600 px-4 py-2 rounded-lg ml-3">
+              <Text className="text-white font-medium text-sm">Criar Meta</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {metasExibidas.length === 0 ? (
-            <View className={`p-6 rounded-xl ${
-              isDark ? 'bg-gray-800' : 'bg-white'
-            } shadow-sm items-center`}>
-              <Text className="text-6xl mb-4">
-                {activeTab === 'ativas' ? '🎯' : '🏆'}
+            <View className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm items-center`}>
+              <Text className="text-6xl mb-4">{activeTab === 'ativas' ? '🎯' : '🏆'}</Text>
+              <Text className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {activeTab === 'ativas' ? 'Nenhuma meta ativa' : 'Nenhuma meta concluída'}
               </Text>
-              <Text className={`text-lg font-semibold mb-2 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>
-                {activeTab === 'ativas' 
-                  ? 'Nenhuma meta ativa'
-                  : 'Nenhuma meta finalizada'
-                }
-              </Text>
-              <Text className={`text-center ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                {activeTab === 'ativas' 
+              <Text className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {activeTab === 'ativas'
                   ? 'Crie sua primeira meta financeira para começar a economizar!'
-                  : 'Complete suas metas ativas para vê-las aqui.'
-                }
+                  : 'Complete suas metas ativas para vê-las aqui.'}
               </Text>
               {activeTab === 'ativas' && (
-                <TouchableOpacity
-                  onPress={() => setModalVisible(true)}
-                  className="bg-blue-600 px-6 py-3 rounded-lg mt-4"
-                >
+                <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-blue-600 px-6 py-3 rounded-lg mt-4">
                   <Text className="text-white font-medium">Criar Primeira Meta</Text>
                 </TouchableOpacity>
               )}
             </View>
           ) : (
-            metasExibidas.map((meta) => (
+            metasExibidas.map(meta => (
               <MetaCard
                 key={meta.id}
                 meta={meta}
                 progresso={calcularProgresso(meta.valorAtual, meta.valorMeta)}
                 onPress={() => handleMetaClick(meta)}
+                isVeryNarrow={isVeryNarrow}
               />
             ))
           )}
+          <View className="h-4" />
         </ScrollView>
       </View>
 
-      {/* Modais */}
       <AddMetaModal
         visible={modalVisible}
         onClose={closeModal}
-        onSave={handleAddMeta}
+        onSave={handleSaveMeta}
         editingMeta={editingMeta}
       />
 
-      <AddValorMetaModal
-        visible={valorModalVisible}
-        onClose={closeValorModal}
-        onAddValor={handleConfirmAddValor}
-        meta={selectedMeta}
-      />
-
-      <MetaOptionsModal
-        visible={optionsModalVisible}
-        onClose={closeOptionsModal}
-        meta={selectedMeta}
-        isActive={activeTab === 'ativas'}
-        progresso={selectedMeta ? calcularProgresso(selectedMeta.valorAtual, selectedMeta.valorMeta) : 0}
-        onAddValor={() => {
-          const meta = selectedMeta;
-          closeOptionsModal();
-          setTimeout(() => {
-            if (meta) handleAddValor(meta);
-          }, 100);
-        }}
-        onEdit={() => {
-          const meta = selectedMeta;
-          closeOptionsModal();
-          setTimeout(() => {
-            if (meta) handleEditMeta(meta);
-          }, 100);
-        }}
-        onDelete={() => {
-          const meta = selectedMeta;
-          closeOptionsModal();
-          setTimeout(() => {
-            if (meta) handleDeleteMeta(meta);
-          }, 100);
-        }}
-      />
-
-      {/* Toast */}
-      <Toast
-        visible={toastVisible}
-        message={toastMessage}
-        onHide={() => setToastVisible(false)}
-        type="success"
-      />
+      {selectedMeta && (
+        <>
+          <AddValorMetaModal
+            visible={valorModalVisible}
+            onClose={closeValorModal}
+            onAddValor={handleConfirmAddValor}
+            meta={selectedMeta}
+          />
+          <MetaOptionsModal
+            visible={optionsModalVisible}
+            onClose={closeOptionsModal}
+            onEdit={() => handleEditMeta(selectedMeta)}
+            onDelete={() => handleDeleteMeta(selectedMeta)}
+            onAddValor={() => handleOpenAddValor(selectedMeta)}
+            onFinalizar={() => handleFinalizarMeta(selectedMeta)}
+            meta={selectedMeta}
+            progresso={selectedMeta ? calcularProgresso(selectedMeta.valorAtual, selectedMeta.valorMeta) : 0}
+            isActive={!selectedMeta?.finalizada}
+          />
+          <ConfirmationModal
+            visible={deleteModalVisible}
+            onClose={() => setDeleteModalVisible(false)}
+            onConfirm={confirmDeleteMeta}
+            title="Excluir Meta"
+            message={`Tem certeza que deseja excluir a meta "${selectedMeta?.nome}"?`}
+          />
+        </>
+      )}
     </SafeAreaView>
   );
 };

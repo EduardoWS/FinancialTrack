@@ -14,16 +14,66 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Contexto para forçar tema específico (usado nas telas de auth)
+interface ForceThemeContextType {
+  forcedTheme: Theme | null;
+  setForcedTheme: (theme: Theme | null) => void;
+}
+
+const ForceThemeContext = createContext<ForceThemeContextType | undefined>(undefined);
+
 export function useTheme() {
   const context = useContext(ThemeContext);
+  const forceContext = useContext(ForceThemeContext);
+  
   if (context === undefined) {
     throw new Error('useTheme deve ser usado dentro de um ThemeProvider');
+  }
+  
+  // Se há um tema forçado, usa ele; caso contrário, usa o tema normal
+  const effectiveTheme = forceContext?.forcedTheme || context.theme;
+  
+  return {
+    ...context,
+    theme: effectiveTheme
+  };
+}
+
+export function useForceTheme() {
+  const context = useContext(ForceThemeContext);
+  if (context === undefined) {
+    throw new Error('useForceTheme deve ser usado dentro de um ForceThemeProvider');
   }
   return context;
 }
 
 interface ThemeProviderProps {
   children: ReactNode;
+}
+
+interface ForceThemeProviderProps {
+  children: ReactNode;
+  forceTheme?: Theme | null;
+}
+
+// Provider para forçar tema específico
+export function ForceThemeProvider({ children, forceTheme = null }: ForceThemeProviderProps) {
+  const [forcedTheme, setForcedTheme] = useState<Theme | null>(forceTheme);
+
+  useEffect(() => {
+    setForcedTheme(forceTheme);
+  }, [forceTheme]);
+
+  const value = {
+    forcedTheme,
+    setForcedTheme
+  };
+
+  return (
+    <ForceThemeContext.Provider value={value}>
+      {children}
+    </ForceThemeContext.Provider>
+  );
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {

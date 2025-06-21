@@ -1,34 +1,105 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from "react";
-import { RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import Toast from '../../components/atoms/Toast';
+import { Dimensions, RefreshControl, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { errorToast, successToast } from '../../components/atoms/custom-toasts';
+import ScreenLoader from '../../components/atoms/ScreenLoader';
 import Header from '../../components/Header';
 import AddTransactionModal from '../../components/molecules/AddTransactionModal';
-import { FilterType, useTransactions } from '../../hooks/useTransactions';
-import { formatCurrency } from '../../services/dashboardService';
+import ConfirmationModal from "../../components/molecules/ConfirmationModal";
+import TransactionFilterModal from '../../components/molecules/TransactionFilterModal';
+import TransactionOptionsModal from "../../components/molecules/TransactionOptionsModal";
+import { DateFilter, FilterType, useTransactions } from '../../hooks/useTransactions';
 import { useTheme } from '../../services/ThemeContext';
+import { formatCurrency, Transaction } from "../../services/transacoesService";
 
 const TransacoesScreen = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { width } = Dimensions.get('window');
+  const isMobile = width < 768;
+  const showCategory = width >= 500;
+  const isVeryNarrow = width < 400;
+  const isNarrowHeader = width < 450;
+  const showFilterLabel = width >= 500;
   
-  const [modalVisible, setModalVisible] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
+  const [addEditModalVisible, setAddEditModalVisible] = useState(false);
+  const [optionsModalVisible, setOptionsModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   // Hook customizado para gerenciar transações
   const {
     transactions,
+    incomeTransactions,
+    expenseTransactions,
     filteredTransactions,
     activeFilter,
+    dateFilter,
+    filterTitle,
     currentPage,
     totalPages,
     paginatedTransactions,
     loading,
     error,
     setActiveFilter,
+    setDateFilter,
     setCurrentPage,
-    addTransaction,
+    adicionarTransacao,
+    atualizarTransacao,
+    excluirTransacao,
     refreshTransactions
-  } = useTransactions(5);
+  } = useTransactions(10);
+
+  const handleTransactionPress = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setOptionsModalVisible(true);
+  };
+
+  const handleEdit = () => {
+    setOptionsModalVisible(false);
+    setAddEditModalVisible(true);
+  };
+
+  const handleDelete = () => {
+    setOptionsModalVisible(false);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedTransaction) {
+      try {
+        await excluirTransacao(selectedTransaction.id);
+        successToast('Transação excluída com sucesso!');
+        setDeleteModalVisible(false);
+        setSelectedTransaction(null);
+      } catch (err: any) {
+        errorToast('Erro ao excluir transação', err.message);
+      }
+    }
+  };
+
+  const handleSaveTransaction = async (transactionData: Omit<Transaction, 'id'>, id?: string) => {
+    try {
+      if (id) {
+        await atualizarTransacao(id, transactionData);
+        successToast('Transação atualizada com sucesso!');
+      } else {
+        await adicionarTransacao(transactionData);
+        successToast('Transação adicionada com sucesso!');
+      }
+      setAddEditModalVisible(false);
+      setSelectedTransaction(null); // Limpa a seleção após salvar/editar
+    } catch (err: any) {
+      errorToast(id ? 'Erro ao atualizar' : 'Erro ao adicionar', err.message);
+    }
+  };
+
+  const handleApplyFilter = (filter: DateFilter) => {
+    setDateFilter(filter);
+    setFilterModalVisible(false);
+  };
 
   const getAmountColor = (type: 'income' | 'expense') => {
     return type === 'income' ? 'text-green-600' : 'text-red-600';
@@ -53,7 +124,10 @@ const TransacoesScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveFilter(filter)}
         className={`
-          px-4 py-2 rounded-full border-2 min-w-[100px] items-center
+          ${isMobile 
+            ? 'flex-1 py-2 px-1 rounded-lg border items-center mx-1'
+            : 'px-4 py-2 rounded-full border-2 min-w-[100px] items-center'
+          }
           ${isActive 
             ? (isDark ? 'bg-blue-600 border-blue-600' : 'bg-blue-600 border-blue-600')
             : (isDark ? 'bg-transparent border-gray-600' : 'bg-transparent border-gray-300')
@@ -61,7 +135,8 @@ const TransacoesScreen = () => {
         `}
       >
         <Text className={`
-          font-medium text-sm
+          font-medium text-center
+          ${isMobile ? 'text-xs' : 'text-sm'}
           ${isActive 
             ? 'text-white' 
             : (isDark ? 'text-gray-300' : 'text-gray-700')
@@ -93,7 +168,7 @@ const TransacoesScreen = () => {
   }) => (
     <TouchableOpacity
       onPress={onPress}
-      className={`
+      className={`mr-2
         w-10 h-10 rounded-lg items-center justify-center
         ${isActive 
           ? (isDark ? 'bg-blue-600' : 'bg-blue-600')
@@ -112,6 +187,11 @@ const TransacoesScreen = () => {
       </Text>
     </TouchableOpacity>
   );
+
+  // Componente de carregamento
+  if (loading) {
+    return <ScreenLoader title="Transações" text="Carregando transações..." />;
+  }
 
   // Componente de erro
   if (error && !loading) {
@@ -138,39 +218,52 @@ const TransacoesScreen = () => {
       <Header title="Transações" />
       
       <View className="flex-1 p-4">
-        {/* Header da página com filtros */}
-        <View className="mb-6 flex-row justify-between items-center">
-          {/* Filtros */}
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="flex-row space-x-3"
-          >
+        {/* Filtros de Tipo e Ações */}
+        <View className={`mb-4 ${!isMobile ? 'flex-row justify-between items-center' : ''}`}>
+          <View className="flex-row">
             <FilterButton 
               filter="all" 
-              label="Todas as transações" 
+              label="Todas" 
               count={transactions.length}
             />
             <FilterButton 
               filter="income" 
               label="Entradas" 
-              count={transactions.filter(t => t.type === 'income').length}
+              count={incomeTransactions.length}
             />
             <FilterButton 
               filter="expense" 
               label="Saídas" 
-              count={transactions.filter(t => t.type === 'expense').length}
+              count={expenseTransactions.length}
             />
-          </ScrollView>
-          <View className="flex-1 items-end">
-            <TouchableOpacity
-              onPress={() => setModalVisible(true)}
-              className="bg-blue-600 px-4 py-2 rounded-lg"
-            >
-              <Text className="text-white font-medium">Cadastrar Transação</Text>
-            </TouchableOpacity>
           </View>
+          {/* Botão de Cadastrar (apenas web) */}
+          {!isMobile && (
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedTransaction(null);
+                setAddEditModalVisible(true);
+              }}
+              className="flex-row items-center bg-blue-600 px-4 py-2 rounded-lg"
+            >
+              <Ionicons name="add" size={20} color="white" />
+              <Text className="text-white font-medium ml-2">Nova Transação</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Botão de Cadastrar (apenas mobile) */}
+        {isMobile && (
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedTransaction(null);
+              setAddEditModalVisible(true);
+            }}
+            className="bg-blue-600 py-3 px-4 rounded-lg mb-4"
+          >
+            <Text className="text-white font-medium text-center">Cadastrar Nova Transação</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Tabela de transações */}
         <View className={`
@@ -179,43 +272,56 @@ const TransacoesScreen = () => {
         `}>
           {/* Cabeçalho da tabela */}
           <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-            <Text className={`text-lg font-semibold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>
-              {activeFilter === 'all' && 'Todas as transações'}
-              {activeFilter === 'income' && 'Entradas'}
-              {activeFilter === 'expense' && 'Saídas'}
-            </Text>
-            <Text className={`text-sm ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              {filteredTransactions.length} {filteredTransactions.length === 1 ? 'transação' : 'transações'}
-            </Text>
+            <View>
+              <Text className={`text-lg font-semibold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                {filterTitle}
+              </Text>
+              <Text className={`text-sm ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                {filteredTransactions.length} {filteredTransactions.length === 1 ? 'transação encontrada' : 'transações encontradas'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setFilterModalVisible(true)}
+              className="flex-row items-center bg-blue-600 px-3 py-2 rounded-lg"
+            >
+              <Ionicons name="filter" size={16} color="white" />
+              {showFilterLabel && (
+                <Text className="text-white font-medium ml-2 text-sm">Filtrar</Text>
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Headers da tabela */}
-          <View className="flex-row justify-between items-center mb-3 px-2">
-            <Text className={`text-sm font-medium flex-1 ${
+          {/* <View className="flex-row justify-between items-center mb-3 px-2">
+            <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium flex-1 ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>
               Descrição
             </Text>
-            <Text className={`text-sm font-medium w-24 text-center ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Categoria
-            </Text>
-            <Text className={`text-sm font-medium w-24 text-center ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Data
-            </Text>
-            <Text className={`text-sm font-medium w-24 text-right ${
+            {showCategory && (
+              <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium w-24 text-center ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Categoria
+              </Text>
+            )}
+            {!isMobile && (
+              <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium w-24 text-center ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Data
+              </Text>
+            )}
+            <Text className={`${isNarrowHeader ? 'text-xs' : 'text-sm'} font-medium w-24 text-right ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>
               Valor
             </Text>
-          </View>
+          </View> */}
 
           {/* Lista de transações paginadas */}
           <ScrollView 
@@ -230,91 +336,142 @@ const TransacoesScreen = () => {
               />
             }
           >
-            <View className="space-y-2">
-              {paginatedTransactions.map((transaction) => (
-                <View 
-                  key={transaction.id}
-                  className={`
-                    flex-row items-center justify-between p-3 rounded-lg
-                    ${isDark ? 'bg-gray-750' : 'bg-gray-50'}
-                  `}
+            {paginatedTransactions.length === 0 ? (
+              <View className="flex-1 justify-center items-center p-8">
+                <Text className="text-6xl mb-4">
+                  {activeFilter === 'income' ? '💰' : activeFilter === 'expense' ? '💸' : '📊'}
+                </Text>
+                <Text className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Nenhuma transação encontrada
+                </Text>
+                <Text className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {activeFilter === 'all' 
+                    ? 'Adicione sua primeira transação para começar a acompanhar suas finanças!'
+                    : `Nenhuma ${activeFilter === 'income' ? 'entrada' : 'saída'} encontrada`
+                  }
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedTransaction(null); // Garante que estamos criando, não editando
+                    setAddEditModalVisible(true);
+                  }}
+                  className="bg-blue-600 px-6 py-3 rounded-lg mt-4"
                 >
-                  {/* Ícone e Descrição */}
-                  <View className="flex-row items-center flex-1">
-                    <View className={`
-                      w-8 h-8 rounded-full items-center justify-center mr-3
-                      ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'}
-                    `}>
-                      <Text className={`
-                        text-sm font-bold
-                        ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}
-                      `}>
-                        {getTransactionIcon(transaction.type)}
-                      </Text>
-                    </View>
-                    <Text className={`
-                      font-medium flex-1
-                      ${isDark ? 'text-white' : 'text-gray-900'}
-                    `}>
-                      {transaction.description}
-                    </Text>
-                  </View>
+                  <Text className="text-white font-medium">
+                    Adicionar Transação
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="">
+                {paginatedTransactions.map((transaction, index) => (
+                  <View key={transaction.id} className={index > 0 ? '' : ''}>
+                    <TouchableOpacity 
+                      onPress={() => handleTransactionPress(transaction)}
+                      className={` ${isMobile ? 'mb-2 py-6 px-4' : 'mb-2 py-6 px-4' }
+                        flex-row items-center justify-between p-3 rounded-lg
+                        ${isDark ? 'bg-gray-700' : 'bg-gray-100'}
+                      `}
+                    >
+                      {/* Ícone e Descrição */}
+                      <View className="flex-row items-center flex-1">
+                        <View className={`
+                          w-8 h-8 rounded-full items-center justify-center mr-3
+                          ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'}
+                        `}>
+                          <Text className={`
+                            text-sm font-bold
+                            ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}
+                          `}>
+                            {getTransactionIcon(transaction.type)}
+                          </Text>
+                        </View>
+                        <View className="flex-1">
+                          <Text className={`
+                            font-medium flex-1
+                            ${isVeryNarrow ? 'text-sm' : ''}
+                            ${isDark ? 'text-white' : 'text-gray-900'}
+                          `}>
+                            {transaction.description}
+                          </Text>
+                          {isMobile && (
+                            <Text className={`
+                              text-xs
+                              ${isDark ? 'text-gray-400' : 'text-gray-500'}
+                            `}>
+                              {new Date(transaction.date).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: isVeryNarrow ? '2-digit' : 'numeric',
+                              })}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
 
-                  {/* Categoria */}
-                  <View className="w-24 items-center">
-                    <View className={`
-                      px-2 py-1 rounded-full
-                      ${isDark ? 'bg-gray-700' : 'bg-gray-200'}
-                    `}>
-                      <Text className={`
-                        text-xs
-                        ${isDark ? 'text-gray-300' : 'text-gray-700'}
-                      `}>
-                        {transaction.category}
-                      </Text>
-                    </View>
-                  </View>
+                      {/* Categoria */}
+                      {showCategory && (
+                        <View className="w-24 items-center">
+                          <View className={`
+                            px-2 py-1 rounded-full
+                            ${isDark ? 'bg-gray-600' : 'bg-gray-200'}
+                          `}>
+                            <Text className={`
+                              text-xs
+                              ${isDark ? 'text-gray-300' : 'text-gray-700'}
+                            `}>
+                              {transaction.category}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
 
-                  {/* Data */}
-                  <View className="w-24 items-center">
-                    <Text className={`
-                      text-sm
-                      ${isDark ? 'text-gray-400' : 'text-gray-600'}
-                    `}>
-                      {transaction.date}
-                    </Text>
-                  </View>
+                      {/* Data */}
+                      {!isMobile && (
+                        <View className="w-24 items-center">
+                          <Text className={`
+                            text-sm
+                            ${isDark ? 'text-gray-400' : 'text-gray-600'}
+                          `}>
+                            {new Date(transaction.date).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: isVeryNarrow ? '2-digit' : 'numeric',
+                            })}
+                          </Text>
+                        </View>
+                      )}
 
-                  {/* Valor */}
-                  <View className="w-24 items-end">
-                    <Text className={`
-                      font-semibold
-                      ${getAmountColor(transaction.type)}
-                    `}>
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(Math.abs(transaction.amount))}
-                    </Text>
+                      {/* Valor */}
+                      <View className="w-24 items-end">
+                        <Text className={`
+                          font-semibold
+                          ${isVeryNarrow ? 'text-sm' : ''}
+                          ${getAmountColor(transaction.type)}
+                        `}>
+                          {transaction.type === 'income' ? '+' : '-'}
+                          {formatCurrency(Math.abs(transaction.amount))}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
                   </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
           </ScrollView>
         </View>
 
         {/* Paginação */}
         {totalPages > 1 && (
-          <View className="flex-row justify-center items-center space-x-2">
-            {/* Botão Anterior */}
+          <View className="flex-row justify-center items-center">
             <TouchableOpacity
               onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className={`
-                px-3 py-2 rounded-lg
-                ${currentPage === 1 
+              className={`px-3 py-2 rounded-lg mr-2 ${
+                currentPage === 1 
                   ? (isDark ? 'bg-gray-700 opacity-50' : 'bg-gray-200 opacity-50')
                   : (isDark ? 'bg-gray-700' : 'bg-gray-200')
-                }
-              `}
+              }`}
             >
               <Text className={`
                 ${isDark ? 'text-gray-300' : 'text-gray-700'}
@@ -324,7 +481,7 @@ const TransacoesScreen = () => {
             </TouchableOpacity>
 
             {/* Números das páginas */}
-            <View className="flex-row space-x-2">
+            <View className="flex-row">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let page = i + 1;
                 
@@ -352,13 +509,11 @@ const TransacoesScreen = () => {
             <TouchableOpacity
               onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className={`
-                px-3 py-2 rounded-lg
-                ${currentPage === totalPages 
+              className={`px-3 py-2 rounded-lg mr-2 ${
+                currentPage === totalPages 
                   ? (isDark ? 'bg-gray-700 opacity-50' : 'bg-gray-200 opacity-50')
                   : (isDark ? 'bg-gray-700' : 'bg-gray-200')
-                }
-              `}
+              }`}
             >
               <Text className={`
                 ${isDark ? 'text-gray-300' : 'text-gray-700'}
@@ -370,23 +525,42 @@ const TransacoesScreen = () => {
         )}
       </View>
 
-      {/* Modal para adicionar nova transação */}
+      {/* Modal para adicionar/editar nova transação */}
       <AddTransactionModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onAdd={(transaction) => {
-          addTransaction(transaction);
-          setModalVisible(false);
-          setToastVisible(true);
+        visible={addEditModalVisible}
+        onClose={() => {
+          setAddEditModalVisible(false);
+          setSelectedTransaction(null);
         }}
+        onSave={handleSaveTransaction}
+        editingTransaction={selectedTransaction}
       />
-            {/* Toast de sucesso */}
-        <Toast
-          message="Transação adicionada com sucesso!"
-          type="success"
-          visible={toastVisible}
-          onHide={() => setToastVisible(false)}
-        />
+
+      {/* Modal de Opções da Transação */}
+      <TransactionOptionsModal
+        visible={optionsModalVisible}
+        onClose={() => setOptionsModalVisible(false)}
+        transaction={selectedTransaction}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+
+      {/* Modal de Confirmação para Excluir */}
+      <ConfirmationModal
+        visible={deleteModalVisible}
+        onClose={() => setDeleteModalVisible(false)}
+        onConfirm={confirmDelete}
+        title="Excluir Transação"
+        message={`Tem certeza que deseja excluir a transação "${selectedTransaction?.description}"? Esta ação não pode ser desfeita.`}
+      />
+
+      {/* Modal de Filtro de Data */}
+      <TransactionFilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        onApply={handleApplyFilter}
+        currentFilter={dateFilter}
+      />
       </SafeAreaView>
     );
   };

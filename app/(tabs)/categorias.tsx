@@ -1,67 +1,55 @@
 import React, { useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Header from '../../components/Header';
-import Toast from '../../components/atoms/Toast';
+import ScreenLoader from '../../components/atoms/ScreenLoader';
+import { errorToast, successToast } from '../../components/atoms/custom-toasts';
 import AddCategoryModal from '../../components/molecules/AddCategoryModal';
+import ConfirmationModal from '../../components/molecules/ConfirmationModal';
+import { useCategorias } from '../../hooks/useCategorias';
 import { useTheme } from '../../services/ThemeContext';
-
-interface Category {
-  id: string;
-  name: string;
-  type: 'income' | 'expense';
-  color: string;
-  icon: string;
-}
+import { Category } from '../../services/categoriasService';
 
 const CategoriasScreen = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { width } = Dimensions.get('window');
+  const isMobile = width < 768;
+  const isVeryNarrow = width < 400;
   
   // Estado inicial com categorias padrão
-  const [categories, setCategories] = useState<Category[]>([
-    // Categorias de Receita
-    { id: '1', name: 'Salário', type: 'income', color: '#10b981', icon: '💰' },
-    { id: '2', name: 'Freelance', type: 'income', color: '#06b6d4', icon: '💻' },
-    { id: '3', name: 'Transferência', type: 'income', color: '#8b5cf6', icon: '🔄' },
-    { id: '4', name: 'Investimentos', type: 'income', color: '#f59e0b', icon: '📈' },
-    { id: '5', name: 'Outros', type: 'income', color: '#6b7280', icon: '💡' },
-    
-    // Categorias de Despesa
-    { id: '6', name: 'Mercado', type: 'expense', color: '#ef4444', icon: '🛒' },
-    { id: '7', name: 'Transporte', type: 'expense', color: '#f59e0b', icon: '🚗' },
-    { id: '8', name: 'Lazer', type: 'expense', color: '#ec4899', icon: '🎮' },
-    { id: '9', name: 'Moradia', type: 'expense', color: '#3b82f6', icon: '🏠' },
-    { id: '10', name: 'Saúde', type: 'expense', color: '#06b6d4', icon: '🏥' },
-    { id: '11', name: 'Educação', type: 'expense', color: '#8b5cf6', icon: '📚' },
-    { id: '12', name: 'Outros', type: 'expense', color: '#6b7280', icon: '❓' },
-  ]);
+  const {
+    incomeCategories,
+    expenseCategories,
+    loading,
+    error, // Podemos usar isso para mostrar feedback de erro
+    adicionarCategoria,
+    atualizarCategoria,
+    excluirCategoria,
+  } = useCategorias();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('expense');
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
-  const handleAddCategory = (categoryData: Omit<Category, 'id'>) => {
-    if (editingCategory) {
-      // Editar categoria existente
-      setCategories(prev => prev.map(cat => 
-        cat.id === editingCategory.id 
-          ? { ...cat, ...categoryData }
-          : cat
-      ));
-      showToast('Categoria atualizada com sucesso!');
-    } else {
-      // Adicionar nova categoria
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        ...categoryData
-      };
-      setCategories(prev => [...prev, newCategory]);
-      showToast('Categoria adicionada com sucesso!');
+  const handleSaveCategory = async (categoryData: Omit<Category, 'id' | 'isDefault'>) => {
+    try {
+      if (editingCategory) {
+        // Editar categoria existente
+        await atualizarCategoria(editingCategory.id, categoryData);
+        successToast('Categoria atualizada!');
+      } else {
+        // Adicionar nova categoria
+        await adicionarCategoria(categoryData);
+        successToast('Categoria adicionada!');
+      }
+      closeModal();
+    } catch (err: any) {
+      errorToast('Erro', err.message);
     }
-    
-    setEditingCategory(null);
   };
 
   const handleEditCategory = (category: Category) => {
@@ -70,26 +58,17 @@ const CategoriasScreen = () => {
   };
 
   const handleDeleteCategory = (category: Category) => {
-    Alert.alert(
-      'Excluir Categoria',
-      `Tem certeza que deseja excluir a categoria "${category.name}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: () => {
-            setCategories(prev => prev.filter(cat => cat.id !== category.id));
-            showToast('Categoria excluída com sucesso!');
-          }
-        }
-      ]
-    );
+    setCategoryToDelete(category);
+    setDeleteModalVisible(true);
   };
 
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setToastVisible(true);
+  const confirmDeleteCategory = () => {
+    if (categoryToDelete) {
+      excluirCategoria(categoryToDelete.id);
+      successToast('Categoria excluída com sucesso!');
+      setDeleteModalVisible(false);
+      setCategoryToDelete(null);
+    }
   };
 
   const closeModal = () => {
@@ -101,9 +80,7 @@ const CategoriasScreen = () => {
     setModalVisible(true);
   };
 
-  const filteredCategories = categories.filter(cat => cat.type === activeTab);
-  const incomeCategories = categories.filter(cat => cat.type === 'income');
-  const expenseCategories = categories.filter(cat => cat.type === 'expense');
+  const filteredCategories = activeTab === 'income' ? incomeCategories : expenseCategories;
 
   const FilterButton = ({ 
     filter, 
@@ -122,7 +99,10 @@ const CategoriasScreen = () => {
       <TouchableOpacity
         onPress={() => setActiveTab(filter)}
         className={`
-          px-4 py-2 rounded-full border-2 min-w-[100px] items-center mr-3
+          ${isMobile 
+            ? 'flex-1 py-2 px-2 rounded-lg border items-center mx-1'
+            : 'px-4 py-2 rounded-full border-2 min-w-[100px] items-center mr-3'
+          }
           ${isActive 
             ? (color === 'green' 
               ? (isDark ? 'bg-green-600 border-green-600' : 'bg-green-600 border-green-600')
@@ -133,7 +113,8 @@ const CategoriasScreen = () => {
         `}
       >
         <Text className={`
-          font-medium text-sm
+          font-medium text-center
+          ${isMobile ? 'text-sm' : 'text-sm'}
           ${isActive 
             ? 'text-white' 
             : (isDark ? 'text-gray-300' : 'text-gray-700')
@@ -154,43 +135,76 @@ const CategoriasScreen = () => {
     );
   };
 
+  if (loading) {
+    return <ScreenLoader title="Categorias" text="Carregando categorias..." />;
+  }
+
   return (
     <SafeAreaView className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <Header title="Categorias" />
       
       <View className="flex-1 p-4">
-        {/* Filtros e Botão Adicionar Categoria */}
-        <View className="flex-row justify-between items-center mb-6">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            className="flex-1"
-          >
-            <FilterButton 
-              filter="expense" 
-              label="Despesas" 
-              count={expenseCategories.length}
-              color="red"
-            />
-            <FilterButton 
-              filter="income" 
-              label="Receitas" 
-              count={incomeCategories.length}
-              color="green"
-            />
-          </ScrollView>
-          
-          <TouchableOpacity
-            onPress={openAddModal}
-            className={`px-4 py-2 rounded-lg ml-3 ${
-              activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
-            }`}
-          >
-            <Text className="text-white font-medium text-sm">
-              + Categoria
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {isMobile ? (
+          // Layout para Mobile
+          <View className="mb-6">
+            <View className="flex-row mb-3">
+              <FilterButton 
+                filter="expense" 
+                label="Despesas" 
+                count={expenseCategories.length}
+                color="red"
+              />
+              <FilterButton 
+                filter="income" 
+                label="Receitas" 
+                count={incomeCategories.length}
+                color="green"
+              />
+            </View>
+            <TouchableOpacity
+              onPress={openAddModal}
+              className={`py-3 px-4 rounded-lg ${
+                activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
+              }`}
+            >
+              <Text className="text-white font-medium text-center">
+                Adicionar Nova Categoria
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          // Layout para Web (Desktop)
+          <View className="flex-row justify-between items-center mb-6">
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              className="flex-1"
+            >
+              <FilterButton 
+                filter="expense" 
+                label="Despesas" 
+                count={expenseCategories.length}
+                color="red"
+              />
+              <FilterButton 
+                filter="income" 
+                label="Receitas" 
+                count={incomeCategories.length}
+                color="green"
+              />
+            </ScrollView>
+            <TouchableOpacity
+              onPress={openAddModal}
+              className={`px-4 py-2 rounded-lg ml-3 ${
+                activeTab === 'income' ? 'bg-green-600' : 'bg-red-600'
+              }`}
+            >
+              <Text className="text-white font-medium text-sm">
+                + Categoria
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Lista de Categorias */}
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -227,20 +241,25 @@ const CategoriasScreen = () => {
               <View 
                 key={category.id} 
                 className={`
-                  flex-row items-center justify-between p-4 rounded-xl mb-3 shadow-sm
+                  flex-row items-center justify-between rounded-xl mb-3 shadow-sm overflow-hidden
                   ${isDark ? 'bg-gray-800' : 'bg-white'}
                 `}
               >
-                <View className="flex-row items-center flex-1">
-                  <View 
-                    className="w-10 h-10 rounded-full justify-center items-center mr-3"
-                    style={{ backgroundColor: category.color }}
-                  >
-                    <Text className="text-lg">{category.icon}</Text>
+                {/* Faixa colorida à esquerda */}
+                <View 
+                  className="w-4 h-full absolute left-0 top-0 bottom-0"
+                  style={{ backgroundColor: category.color }}
+                />
+                
+                <View className="flex-row items-center flex-1 p-4">
+                  <View className="w-8 h-8 justify-center items-center mx-4">
+                    <Text className="text-2xl">{category.icon}</Text>
                   </View>
                   
                   <View className="flex-1">
                     <Text className={`text-base font-semibold ${
+                      isVeryNarrow ? 'text-sm' : 'text-base'
+                    } ${
                       isDark ? 'text-white' : 'text-gray-900'
                     }`}>
                       {category.name}
@@ -253,7 +272,7 @@ const CategoriasScreen = () => {
                   </View>
                 </View>
 
-                <View className="flex-row">
+                <View className="flex-row p-4">
                   <TouchableOpacity
                     onPress={() => handleEditCategory(category)}
                     className={`p-2 mr-2 rounded-lg ${
@@ -285,17 +304,17 @@ const CategoriasScreen = () => {
       <AddCategoryModal
         visible={modalVisible}
         onClose={closeModal}
-        onSave={handleAddCategory}
+        onSave={handleSaveCategory}
         editingCategory={editingCategory}
         defaultType={activeTab}
       />
 
-      {/* Toast */}
-      <Toast
-        visible={toastVisible}
-        message={toastMessage}
-        onHide={() => setToastVisible(false)}
-        type="success"
+      <ConfirmationModal
+        visible={deleteModalVisible}
+        onClose={() => setDeleteModalVisible(false)}
+        onConfirm={confirmDeleteCategory}
+        title="Excluir Categoria"
+        message={`Tem certeza que deseja excluir a categoria "${categoryToDelete?.name}"?`}
       />
     </SafeAreaView>
   );

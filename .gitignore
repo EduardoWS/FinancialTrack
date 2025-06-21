@@ -18,6 +18,9 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# env
+.env
+
 # Metro
 .metro-health-check*
 
@@ -37,3 +40,4 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+google-services.json

@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Meta } from '../../hooks/useMetas';
+import { Alert, Dimensions, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Meta } from '../../services/metasService';
 import { useTheme } from '../../services/ThemeContext';
 
 interface AddMetaModalProps {
@@ -20,6 +21,8 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
   const isDark = theme === 'dark';
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
+  const isWeb = Platform.OS === 'web';
+  const isMobile = screenWidth < 768;
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -41,8 +44,9 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
   ];
 
   const coresDisponiveis = [
-    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', 
-    '#8b5cf6', '#ec4899', '#06b6d4', '#6b7280'
+    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
+    '#8B5CF6', '#EC4899', '#06B6D4', '#6B7280',
+    '#F97316', '#84CC16', '#14B8A6', '#6366F1'
   ];
 
   const iconesDisponiveis = [
@@ -73,7 +77,7 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
     setFormData({
       nome: '',
       valorMeta: '',
-      valorAtual: '0',
+      valorAtual: '',
       tipo: 'outros',
       cor: '#3b82f6',
       icone: '🎯',
@@ -123,260 +127,356 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
     handleClose();
   };
 
+  const renderMobileModal = () => (
+    <View className="flex-1 bg-black bg-opacity-50 justify-end">
+      <View className={`
+        rounded-t-3xl min-h-[85vh] max-h-[95vh]
+        ${isDark ? 'bg-gray-900' : 'bg-white'}
+      `}>
+        {/* Header */}
+        <View className={`
+          flex-row items-center justify-between p-6 border-b
+          ${isDark ? 'border-gray-700' : 'border-gray-200'}
+        `}>
+          <Text className={`text-xl font-bold ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            {editingMeta ? 'Editar Meta' : 'Nova Meta'}
+          </Text>
+          <TouchableOpacity
+            onPress={handleClose}
+            className={`
+              w-10 h-10 rounded-full items-center justify-center
+              ${isDark ? 'bg-gray-800' : 'bg-gray-100'}
+            `}
+          >
+            <Ionicons name="close" size={20} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Content */}
+        <ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
+          {renderContent()}
+        </ScrollView>
+
+        {/* Footer */}
+        <View className={`
+          p-6 border-t flex-row
+          ${isDark ? 'border-gray-700' : 'border-gray-200'}
+        `}>
+          <TouchableOpacity
+            onPress={handleClose}
+            className={`
+              flex-1 py-4 rounded-xl border-2 mr-4
+              ${isDark ? 'border-gray-600' : 'border-gray-300'}
+            `}
+          >
+            <Text className={`
+              text-center font-semibold text-base
+              ${isDark ? 'text-gray-300' : 'text-gray-700'}
+            `}>
+              Cancelar
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            onPress={handleSave}
+            className="flex-1 py-4 rounded-xl bg-blue-600"
+          >
+            <Text className="text-center font-semibold text-base text-white">
+              {editingMeta ? 'Atualizar' : 'Criar'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderWebModal = () => (
+    <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-6">
+      <View 
+        className={`
+          rounded-2xl shadow-2xl
+          ${isDark ? 'bg-gray-900' : 'bg-white'}
+        `}
+        style={{
+          width: Math.min(screenWidth * 0.85, 900),
+          maxHeight: screenHeight * 0.85
+        }}
+      >
+        {/* Header */}
+        <View className={`
+          flex-row items-center justify-between p-6 border-b
+          ${isDark ? 'border-gray-700' : 'border-gray-200'}
+        `}>
+          <Text className={`text-2xl font-bold ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            {editingMeta ? 'Editar Meta Financeira' : 'Nova Meta Financeira'}
+          </Text>
+          <TouchableOpacity
+            onPress={handleClose}
+            className={`
+              w-10 h-10 rounded-full items-center justify-center
+              ${isDark ? 'bg-gray-800' : 'bg-gray-100'}
+            `}
+          >
+            <Ionicons name="close" size={20} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Content in grid layout for web */}
+        <ScrollView 
+          className="flex-1 p-6"
+          showsVerticalScrollIndicator={false}
+        >
+          {renderContent()}
+        </ScrollView>
+
+        {/* Footer */}
+        <View className={`
+          p-6 border-t flex-row justify-end
+          ${isDark ? 'border-gray-700' : 'border-gray-200'}
+        `}>
+          <TouchableOpacity
+            onPress={handleClose}
+            className={`
+              px-8 py-3 rounded-xl border-2 mr-4
+              ${isDark ? 'border-gray-600' : 'border-gray-300'}
+            `}
+          >
+            <Text className={`
+              font-semibold text-base
+              ${isDark ? 'text-gray-300' : 'text-gray-700'}
+            `}>
+              Cancelar
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            onPress={handleSave}
+            className="px-8 py-3 rounded-xl bg-blue-600"
+          >
+            <Text className="text-white font-semibold text-base">
+              {editingMeta ? 'Atualizar Meta' : 'Criar Meta'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderContent = () => (
+    <View className={isWeb && !isMobile ? "flex-row" : ""}>
+      {/* Coluna 1 - Informações básicas */}
+      <View className={isWeb && !isMobile ? "flex-1 mr-8" : ""}>
+        {/* Nome da Meta */}
+        <View className="mb-6">
+          <Text className={`text-sm font-semibold mb-3 ${
+            isDark ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Nome da Meta *
+          </Text>
+          <TextInput
+            className={`border rounded-xl p-4 text-base ${
+              isDark 
+                ? 'bg-gray-800 border-gray-600 text-white' 
+                : 'bg-gray-50 border-gray-300 text-gray-900'
+            }`}
+            placeholder="Ex: Viagem para Europa"
+            placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+            value={formData.nome}
+            onChangeText={(text) => setFormData({...formData, nome: text})}
+          />
+        </View>
+
+        {/* Tipo da Meta */}
+        <View className="mb-6">
+          <Text className={`text-sm font-semibold mb-3 ${
+            isDark ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Tipo da Meta
+          </Text>
+          <View className="flex-row flex-wrap gap-3">
+            {tiposMeta.map((tipo) => (
+              <TouchableOpacity
+                key={tipo.value}
+                onPress={() => setFormData({
+                  ...formData, 
+                  tipo: tipo.value as Meta['tipo'],
+                  icone: tipo.icon
+                })}
+                className={`
+                  flex-row items-center px-4 py-3 rounded-xl border-2
+                  ${formData.tipo === tipo.value
+                    ? 'border-blue-500 bg-blue-500/20'
+                    : (isDark ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50')
+                  }
+                `}
+              >
+                <Text className="text-lg mr-2">{tipo.icon}</Text>
+                <Text className={`text-sm font-medium ${
+                  formData.tipo === tipo.value
+                    ? 'text-blue-600'
+                    : (isDark ? 'text-gray-300' : 'text-gray-700')
+                }`}>
+                  {tipo.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Valores */}
+        <View className="flex-row mb-6">
+          <View className="flex-1 mr-4">
+            <Text className={`text-sm font-semibold mb-3 ${
+              isDark ? 'text-gray-300' : 'text-gray-700'
+            }`}>
+              Valor da Meta *
+            </Text>
+            <TextInput
+              className={`border rounded-xl p-4 text-base ${
+                isDark 
+                  ? 'bg-gray-800 border-gray-600 text-white' 
+                  : 'bg-gray-50 border-gray-300 text-gray-900'
+              }`}
+              placeholder="0,00"
+              placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+              value={formData.valorMeta}
+              onChangeText={(text) => setFormData({...formData, valorMeta: text})}
+              keyboardType="numeric"
+            />
+          </View>
+          <View className="flex-1">
+            <Text className={`text-sm font-semibold mb-3 ${
+              isDark ? 'text-gray-300' : 'text-gray-700'
+            }`}>
+              Valor Atual
+            </Text>
+            <TextInput
+              className={`border rounded-xl p-4 text-base ${
+                isDark 
+                  ? 'bg-gray-800 border-gray-600 text-white' 
+                  : 'bg-gray-50 border-gray-300 text-gray-900'
+              }`}
+              placeholder="0,00"
+              placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+              value={formData.valorAtual}
+              onChangeText={(text) => setFormData({...formData, valorAtual: text})}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+
+        {/* Data Limite */}
+        <View className="mb-6">
+          <Text className={`text-sm font-semibold mb-3 ${
+            isDark ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Data Limite (Opcional)
+          </Text>
+          <TextInput
+            className={`border rounded-xl p-4 text-base ${
+              isDark 
+                ? 'bg-gray-800 border-gray-600 text-white' 
+                : 'bg-gray-50 border-gray-300 text-gray-900'
+            }`}
+            placeholder="AAAA-MM-DD"
+            placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+            value={formData.dataLimite}
+            onChangeText={(text) => setFormData({...formData, dataLimite: text})}
+          />
+        </View>
+      </View>
+
+      {/* Coluna 2 - Personalização */}
+      <View className={isWeb && !isMobile ? "flex-1" : ""}>
+        {/* Cor */}
+        <View className="mb-6">
+          <Text className={`text-sm font-semibold mb-3 ${
+            isDark ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Cor da Meta
+          </Text>
+          <View className="flex-row flex-wrap gap-3">
+            {coresDisponiveis.map((cor) => (
+              <TouchableOpacity
+                key={cor}
+                onPress={() => setFormData({...formData, cor})}
+                className={`
+                  w-12 h-12 rounded-xl border-4 items-center justify-center
+                  ${formData.cor === cor ? 'border-gray-800' : 'border-transparent'}
+                `}
+                style={{ backgroundColor: cor }}
+              >
+                {formData.cor === cor && (
+                  <Ionicons name="checkmark" size={16} color="white" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Ícone */}
+        <View className="mb-6">
+          <Text className={`text-sm font-semibold mb-3 ${
+            isDark ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Ícone da Meta
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            {iconesDisponiveis.map((icone) => (
+              <TouchableOpacity
+                key={icone}
+                onPress={() => setFormData({...formData, icone})}
+                className={`
+                  w-12 h-12 rounded-xl items-center justify-center border-2
+                  ${formData.icone === icone
+                    ? (isDark ? 'border-blue-500 bg-blue-500/20' : 'border-blue-500 bg-blue-50')
+                    : (isDark ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50')
+                  }
+                `}
+              >
+                <Text className="text-xl">{icone}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Descrição */}
+        <View className="mb-6">
+          <Text className={`text-sm font-semibold mb-3 ${
+            isDark ? 'text-gray-300' : 'text-gray-700'
+          }`}>
+            Descrição (Opcional)
+          </Text>
+          <TextInput
+            className={`border rounded-xl p-4 text-base h-24 ${
+              isDark 
+                ? 'bg-gray-800 border-gray-600 text-white' 
+                : 'bg-gray-50 border-gray-300 text-gray-900'
+            }`}
+            placeholder="Descreva sua meta..."
+            placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+            value={formData.descricao}
+            onChangeText={(text) => setFormData({...formData, descricao: text})}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <Modal
       visible={visible}
       transparent={true}
-      animationType="fade"
+      animationType={isMobile ? "slide" : "fade"}
       onRequestClose={handleClose}
     >
-      {/* Fundo desfocado */}
-      <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-4">
-        {/* Container do modal centralizado */}
-        <View 
-          className={`
-            rounded-2xl shadow-2xl
-            ${isDark ? 'bg-gray-800' : 'bg-white'}
-          `}
-          style={{
-            width: Math.min(screenWidth * 0.9, 500),
-            maxHeight: screenHeight * 0.8
-          }}
-        >
-          {/* Header */}
-          <View className={`
-            flex-row items-center justify-between p-6 border-b
-            ${isDark ? 'border-gray-700' : 'border-gray-200'}
-          `}>
-            <Text className={`text-xl font-bold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>
-              {editingMeta ? 'Editar Meta' : 'Nova Meta Financeira'}
-            </Text>
-            <TouchableOpacity
-              onPress={handleClose}
-              className={`
-                w-8 h-8 rounded-full items-center justify-center
-                ${isDark ? 'bg-gray-700' : 'bg-gray-100'}
-              `}
-            >
-              <Text className={`text-lg font-bold ${
-                isDark ? 'text-gray-300' : 'text-gray-600'
-              }`}>
-                ×
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Formulário */}
-          <ScrollView 
-            className="flex-1 px-6 py-4"
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: screenHeight * 0.8 - 160 }}
-          >
-            {/* Nome da Meta */}
-            <View className="mb-4">
-              <Text className={`text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Nome da Meta *
-              </Text>
-              <TextInput
-                className={`border rounded-lg p-3 ${
-                  isDark 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
-                placeholder="Ex: Viagem para Europa"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                value={formData.nome}
-                onChangeText={(text) => setFormData({...formData, nome: text})}
-              />
-            </View>
-
-            {/* Tipo da Meta */}
-            <View className="mb-4">
-              <Text className={`text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Tipo da Meta
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {tiposMeta.map((tipo) => (
-                  <TouchableOpacity
-                    key={tipo.value}
-                    onPress={() => setFormData({
-                      ...formData, 
-                      tipo: tipo.value as Meta['tipo'],
-                      icone: tipo.icon
-                    })}
-                    className={`
-                      flex-row items-center px-4 py-2 rounded-lg border-2
-                      ${formData.tipo === tipo.value
-                        ? 'border-blue-500'
-                        : (isDark ? 'border-gray-600' : 'border-gray-300')
-                      }
-                    `}
-                  >
-                    <Text className="text-lg mr-2">{tipo.icon}</Text>
-                    <Text className={`text-sm ${
-                      formData.tipo === tipo.value
-                        ? (isDark ? 'text-blue-400' : 'text-blue-600')
-                        : (isDark ? 'text-gray-300' : 'text-gray-700')
-                    }`}>
-                      {tipo.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Valores */}
-            <View className="flex-row space-x-4 mb-4">
-              <View className="flex-1">
-                <Text className={`text-sm font-medium mb-2 ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  Valor da Meta *
-                </Text>
-                <TextInput
-                  className={`border rounded-lg p-3 ${
-                    isDark 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                  placeholder="0,00"
-                  placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                  value={formData.valorMeta}
-                  onChangeText={(text) => setFormData({...formData, valorMeta: text})}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View className="flex-1">
-                <Text className={`text-sm font-medium mb-2 ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  Valor Atual
-                </Text>
-                <TextInput
-                  className={`border rounded-lg p-3 ${
-                    isDark 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                  placeholder="0,00"
-                  placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                  value={formData.valorAtual}
-                  onChangeText={(text) => setFormData({...formData, valorAtual: text})}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            {/* Data Limite */}
-            <View className="mb-4">
-              <Text className={`text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Data Limite (Opcional)
-              </Text>
-              <TextInput
-                className={`border rounded-lg p-3 ${
-                  isDark 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
-                placeholder="AAAA-MM-DD"
-                placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                value={formData.dataLimite}
-                onChangeText={(text) => setFormData({...formData, dataLimite: text})}
-              />
-            </View>
-
-            {/* Cor */}
-            <View className="mb-4">
-              <Text className={`text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Cor
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View className="flex-row space-x-2">
-                  {coresDisponiveis.map((cor) => (
-                    <TouchableOpacity
-                      key={cor}
-                      onPress={() => setFormData({...formData, cor})}
-                      className={`w-10 h-10 rounded-full border-2 ${
-                        formData.cor === cor ? (isDark ? 'border-white' : 'border-gray-700') : 'border-transparent'
-                      }`}
-                      style={{ backgroundColor: cor }}
-                    />
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* Ícone */}
-            <View className="mb-6">
-              <Text className={`text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Ícone
-              </Text>
-              <View className="flex-row flex-wrap">
-                {iconesDisponiveis.map((icone) => (
-                  <TouchableOpacity
-                    key={icone}
-                    onPress={() => setFormData({...formData, icone})}
-                    className={`
-                      w-10 h-10 rounded-lg m-1 items-center justify-center border-2
-                      ${formData.icone === icone
-                        ? (isDark ? 'border-blue-500 bg-blue-100/20' : 'border-blue-500 bg-blue-50')
-                        : (isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-100')
-                      }
-                    `}
-                  >
-                    <Text className="text-lg">{icone}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Espaçamento inferior */}
-            <View className="h-4" />
-          </ScrollView>
-
-          {/* Footer com botões */}
-          <View className={`
-            p-6 border-t flex-row space-x-4
-            ${isDark ? 'border-gray-700' : 'border-gray-200'}
-          `}>
-            <TouchableOpacity
-              onPress={handleClose}
-              className={`
-                flex-1 py-3 rounded-lg border-2
-                ${isDark ? 'border-gray-600' : 'border-gray-300'}
-              `}
-            >
-              <Text className={`
-                text-center font-medium
-                ${isDark ? 'text-gray-300' : 'text-gray-700'}
-              `}>
-                Cancelar
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={handleSave}
-              className="flex-1 py-3 rounded-lg bg-blue-600"
-            >
-              <Text className="text-center font-medium text-white">
-                {editingMeta ? 'Atualizar' : 'Criar Meta'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+      {isMobile ? renderMobileModal() : renderWebModal()}
     </Modal>
   );
 };

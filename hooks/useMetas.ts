@@ -1,131 +1,171 @@
-import { useState } from 'react';
-
-export interface Meta {
-  id: string;
-  nome: string;
-  valorAtual: number;
-  valorMeta: number;
-  tipo: 'viagem' | 'casa' | 'investimentos' | 'emergencia' | 'outros';
-  cor: string;
-  icone: string;
-  dataInicio: Date;
-  dataLimite?: Date;
-  descricao?: string;
-  finalizada: boolean;
-}
+import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../services/AuthContext';
+import {
+  addValueToMeta,
+  createMeta,
+  deleteMeta,
+  fetchUserMetas,
+  Meta,
+  updateMeta,
+} from '../services/metasService';
 
 export const useMetas = () => {
-  const [metas, setMetas] = useState<Meta[]>([
-    {
-      id: '1',
-      nome: 'Viagem',
-      valorAtual: 3000,
-      valorMeta: 10000,
-      tipo: 'viagem',
-      cor: '#3b82f6',
-      icone: '✈️',
-      dataInicio: new Date('2023-01-01'),
-      dataLimite: new Date('2024-12-31'),
-      finalizada: false
-    },
-    {
-      id: '2',
-      nome: 'Comprar Casa',
-      valorAtual: 60000,
-      valorMeta: 300000,
-      tipo: 'casa',
-      cor: '#ef4444',
-      icone: '🏠',
-      dataInicio: new Date('2023-01-01'),
-      dataLimite: new Date('2028-12-31'),
-      finalizada: false
-    },
-    {
-      id: '3',
-      nome: 'Investimentos',
-      valorAtual: 5500,
-      valorMeta: 10000,
-      tipo: 'investimentos',
-      cor: '#f59e0b',
-      icone: '📊',
-      dataInicio: new Date('2023-06-01'),
-      dataLimite: new Date('2024-06-01'),
-      finalizada: false
-    },
-    {
-      id: '4',
-      nome: 'Reserva de Emergência',
-      valorAtual: 1500,
-      valorMeta: 15000,
-      tipo: 'emergencia',
-      cor: '#10b981',
-      icone: '💵',
-      dataInicio: new Date('2023-01-01'),
-      finalizada: false
-    },
-    {
-      id: '5',
-      nome: 'Carro novo',
-      valorAtual: 25000,
-      valorMeta: 25000,
-      tipo: 'outros',
-      cor: '#10b981',
-      icone: '🚗',
-      dataInicio: new Date('2022-01-01'),
-      dataLimite: new Date('2023-12-20'),
-      finalizada: true
-    }
-  ]);
-
-  const [loading, setLoading] = useState(false);
+  const [metas, setMetas] = useState<Meta[]>([]);
+  const [metasAtivas, setMetasAtivas] = useState<Meta[]>([]);
+  const [metasFinalizadas, setMetasFinalizadas] = useState<Meta[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const metasAtivas = metas.filter(meta => !meta.finalizada);
-  const metasFinalizadas = metas.filter(meta => meta.finalizada);
+  const updateMetasStates = useCallback((allMetas: Meta[]) => {
+    setMetas(allMetas);
+    setMetasAtivas(allMetas.filter(m => !m.finalizada));
+    setMetasFinalizadas(allMetas.filter(m => m.finalizada));
+  }, []);
 
+  const loadMetas = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) {
+        setLoading(true);
+      }
+      setError(null);
+      
+      const userMetas = await fetchUserMetas();
+      updateMetasStates(userMetas);
+    } catch (err: any) {
+      setError('Erro ao carregar metas');
+      console.error('Erro ao carregar metas:', err.message);
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
+    }
+  }, [updateMetasStates]);
+
+  useEffect(() => {
+    if (user) {
+      loadMetas();
+    } else {
+      setMetas([]);
+      setMetasAtivas([]);
+      setMetasFinalizadas([]);
+    }
+  }, [user, loadMetas]);
+
+  const adicionarMeta = useCallback(async (metaData: Omit<Meta, 'id'>) => {
+    try {
+      const novaMeta = await createMeta(metaData);
+      
+      // Atualização otimista
+      const newMetas = [...metas, novaMeta];
+      updateMetasStates(newMetas);
+      
+      // Sincronizar em background sem loading
+      loadMetas(false);
+    } catch (err: any) {
+      setError('Erro ao adicionar meta');
+      console.error(err.message);
+      // Reverter em caso de erro
+      loadMetas(false);
+      throw err;
+    }
+  }, [metas, updateMetasStates, loadMetas]);
+
+  const atualizarMeta = useCallback(async (id: string, metaData: Partial<Omit<Meta, 'id'>>) => {
+    try {
+      // Atualização otimista
+      const updatedMetas = metas.map(meta => 
+        meta.id === id ? { ...meta, ...metaData } : meta
+      );
+      updateMetasStates(updatedMetas);
+      
+      // Atualizar no servidor em background
+      await updateMeta(id, metaData);
+      
+      // Sincronizar em background sem loading
+      loadMetas(false);
+    } catch (err: any) {
+      setError('Erro ao atualizar meta');
+      console.error(err.message);
+      // Reverter em caso de erro
+      loadMetas(false);
+      throw err;
+    }
+  }, [metas, updateMetasStates, loadMetas]);
+
+  const excluirMeta = useCallback(async (id: string) => {
+    try {
+      // Atualização otimista
+      const filteredMetas = metas.filter(meta => meta.id !== id);
+      updateMetasStates(filteredMetas);
+      
+      // Excluir no servidor em background
+      await deleteMeta(id);
+      
+      // Sincronizar em background sem loading
+      loadMetas(false);
+    } catch (err: any) {
+      setError('Erro ao excluir meta');
+      console.error(err.message);
+      // Reverter em caso de erro
+      loadMetas(false);
+      throw err;
+    }
+  }, [metas, updateMetasStates, loadMetas]);
+
+  const adicionarValorMeta = useCallback(async (id: string, valor: number) => {
+    try {
+      // Atualização otimista
+      const updatedMetas = metas.map(meta => {
+        if (meta.id === id) {
+          const novoValor = meta.valorAtual + valor;
+          const finalizada = novoValor >= meta.valorMeta;
+          return { ...meta, valorAtual: novoValor, finalizada };
+        }
+        return meta;
+      });
+      updateMetasStates(updatedMetas);
+      
+      // Atualizar no servidor em background
+      await addValueToMeta(id, valor);
+      
+      // Sincronizar em background sem loading
+      loadMetas(false);
+    } catch (err: any) {
+      setError('Erro ao adicionar valor à meta');
+      console.error(err.message);
+      // Reverter em caso de erro
+      loadMetas(false);
+      throw err;
+    }
+  }, [metas, updateMetasStates, loadMetas]);
+  
   const calcularProgresso = (valorAtual: number, valorMeta: number): number => {
     if (valorMeta === 0) return 0;
     return Math.min((valorAtual / valorMeta) * 100, 100);
   };
-
-  const adicionarMeta = (novaMeta: Omit<Meta, 'id'>) => {
-    const meta: Meta = {
-      ...novaMeta,
-      id: Date.now().toString(),
-    };
-    setMetas(prev => [...prev, meta]);
-  };
-
-  const atualizarMeta = (id: string, metaAtualizada: Partial<Meta>) => {
-    setMetas(prev => prev.map(meta => 
-      meta.id === id ? { ...meta, ...metaAtualizada } : meta
-    ));
-  };
-
-  const excluirMeta = (id: string) => {
-    setMetas(prev => prev.filter(meta => meta.id !== id));
-  };
-
-  const adicionarValorMeta = (id: string, valor: number) => {
-    setMetas(prev => prev.map(meta => {
-      if (meta.id === id) {
-        const novoValor = meta.valorAtual + valor;
-        const finalizada = novoValor >= meta.valorMeta;
-        return { 
-          ...meta, 
-          valorAtual: novoValor,
-          finalizada
-        };
-      }
-      return meta;
-    }));
-  };
-
-  const finalizarMeta = (id: string) => {
-    setMetas(prev => prev.map(meta => 
-      meta.id === id ? { ...meta, finalizada: true } : meta
-    ));
-  };
+  
+  const finalizarMeta = useCallback(async (id: string) => {
+    try {
+      // Atualização otimista
+      const updatedMetas = metas.map(meta => 
+        meta.id === id ? { ...meta, finalizada: true } : meta
+      );
+      updateMetasStates(updatedMetas);
+      
+      // Atualizar no servidor em background
+      await updateMeta(id, { finalizada: true });
+      
+      // Sincronizar em background sem loading
+      loadMetas(false);
+    } catch (err: any) {
+      setError('Erro ao finalizar meta');
+      console.error(err.message);
+      // Reverter em caso de erro
+      loadMetas(false);
+      throw err;
+    }
+  }, [metas, updateMetasStates, loadMetas]);
 
   return {
     metas,
@@ -133,11 +173,12 @@ export const useMetas = () => {
     metasFinalizadas,
     loading,
     error,
-    calcularProgresso,
     adicionarMeta,
     atualizarMeta,
     excluirMeta,
     adicionarValorMeta,
-    finalizarMeta
+    finalizarMeta,
+    calcularProgresso,
+    atualizarMetas: loadMetas,
   };
 }; 
