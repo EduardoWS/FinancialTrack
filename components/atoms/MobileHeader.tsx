@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Modal, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../services/ThemeContext';
 import { ThemeToggle } from './ThemeToggle';
@@ -78,40 +78,34 @@ export const MobileHeader = ({ title }: MobileHeaderProps) => {
         animationType="fade"
         onRequestClose={() => setShowMenu(false)}
       >
-        <TouchableOpacity 
+        {/* Overlay que fecha o menu */}
+        <Pressable
           className="flex-1 bg-black/50"
-          activeOpacity={1}
           onPress={() => setShowMenu(false)}
         >
-          <View 
+          {/* Container do menu – absorve o clique para não fechar */}
+          <Pressable
+            onPress={() => { /* impede propagação */ }}
             className={`absolute right-4 min-w-[200px] rounded-lg border shadow-lg ${
-              isDark 
-                ? 'bg-gray-800 border-gray-700' 
-                : 'bg-white border-gray-200'
+              isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
             }`}
             style={{ top: 56 + Math.max(insets.top, 8) + 8 }}
           >
             <View className="p-4 space-y-4">
               {/* Toggle de Tema */}
               <View className="flex-row items-center justify-between">
-                <Text className={`font-medium ${
-                  isDark ? 'text-white' : 'text-gray-800'
-                }`}>
-                  Tema
-                </Text>
+                <Text className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>Tema</Text>
                 <ThemeToggle />
               </View>
-              
+
               {/* Divisor */}
-              <View className={`h-px ${
-                isDark ? 'bg-gray-700' : 'bg-gray-200'
-              }`} />
-              
+              <View className={`h-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+
               {/* Menu do usuário */}
               <UserMenu />
             </View>
-          </View>
-        </TouchableOpacity>
+          </Pressable>
+        </Pressable>
       </Modal>
     </>
   );

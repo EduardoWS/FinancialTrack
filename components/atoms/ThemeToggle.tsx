@@ -1,7 +1,9 @@
+import { useScreenSize } from '@/hooks/useScreenSize';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../services/ThemeContext';
+import { ThemeSwitch } from './ThemeSwitch';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -12,8 +14,25 @@ interface ThemeOption {
 }
 
 export function ThemeToggle() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { theme, themeMode, setThemeMode } = useTheme();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isMobile } = useScreenSize();
+
+  const isDark = theme === 'dark';
+
+  // Versão mobile: renderiza somente um switch sem menu adicional
+  if (isMobile) {
+    return (
+      <View className="flex-row items-center space-x-2">
+        <Ionicons
+          name={isDark ? 'moon' : 'sunny'}
+          size={18}
+          color={isDark ? '#D1D5DB' : '#6B7280'}
+        />
+        <ThemeSwitch />
+      </View>
+    );
+  }
 
   const themeOptions: ThemeOption[] = [
     {
@@ -42,8 +61,6 @@ export function ThemeToggle() {
     setThemeMode(mode);
     setIsMenuOpen(false);
   };
-
-  const isDark = theme === 'dark';
 
   return (
     <View className="relative">
