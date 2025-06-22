@@ -126,7 +126,7 @@ const TransactionsModal: React.FC<TransactionsModalProps> = ({
                       font-bold text-sm
                       ${getAmountColor(transaction.type)}
                     `}>
-                      {transaction.type === 'income' ? '+' : ''}
+                      {transaction.type === 'income' ? '+' : '-'}
                       {formatCurrency(Math.abs(transaction.amount))}
                     </Text>
                   </View>
@@ -258,7 +258,7 @@ const TransactionsModal: React.FC<TransactionsModalProps> = ({
                       font-bold text-lg
                       ${getAmountColor(transaction.type)}
                     `}>
-                      {transaction.type === 'income' ? '+' : ''}
+                      {transaction.type === 'income' ? '+' : '-'}
                       {formatCurrency(Math.abs(transaction.amount))}
                     </Text>
                   </View>

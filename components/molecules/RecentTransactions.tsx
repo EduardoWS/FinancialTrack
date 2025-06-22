@@ -118,7 +118,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                     font-semibold ${isMobile ? 'text-sm' : 'text-base'}
                     ${getAmountColor(transaction.type)}
                   `}>
-                    {transaction.type === 'income' ? '+' : ''}
+                    {transaction.type === 'income' ? '+' : '-'}
                     {formatCurrency(Math.abs(transaction.amount))}
                   </Text>
                 </View>

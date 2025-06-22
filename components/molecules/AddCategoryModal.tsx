@@ -332,6 +332,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
         <View className="flex-row flex-wrap gap-3">
           {availableColors.map(color => (
             <TouchableOpacity
+              testID={`color-selector-${color}`}
               key={color}
               onPress={() => setFormData({ ...formData, color })}
               className={`
@@ -358,6 +359,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
         <View className="flex-row flex-wrap gap-2">
           {availableIcons.map(icon => (
             <TouchableOpacity
+              testID={`icone-selector-${icon}`}
               key={icon}
               onPress={() => setFormData({ ...formData, icon })}
               className={`
