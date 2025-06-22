@@ -51,6 +51,7 @@ const ComboBox = <T extends string | number = string>({
   return (
     <>
       <TouchableOpacity
+        testID="combobox-trigger"
         onPress={() => !disabled && setModalVisible(true)}
         activeOpacity={0.8}
         className={`flex-row items-center justify-between px-4 py-3 rounded-xl border-2 ${
@@ -85,6 +86,7 @@ const ComboBox = <T extends string | number = string>({
 
       {/* Modal de seleção */}
       <Modal
+        testID="combobox-modal"
         visible={modalVisible}
         transparent
         animationType={isMobile ? 'slide' : 'fade'}
@@ -98,6 +100,7 @@ const ComboBox = <T extends string | number = string>({
               <ScrollView className="p-6" showsVerticalScrollIndicator={false}>
                 {items.map((item) => (
                   <TouchableOpacity
+                    testID={`combobox-option-${item.label}`}
                     key={String(item.value)}
                     onPress={() => handleSelect(item.value)}
                     className={`py-3 flex-row items-center border-b ${
@@ -135,6 +138,7 @@ const ComboBox = <T extends string | number = string>({
               <ScrollView className="p-6" showsVerticalScrollIndicator={false}>
                 {items.map((item) => (
                   <TouchableOpacity
+                    testID={`combobox-option-${item.label}`}
                     key={String(item.value)}
                     onPress={() => handleSelect(item.value)}
                     className={`py-3 flex-row items-center border-b ${

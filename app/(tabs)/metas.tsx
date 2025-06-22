@@ -48,8 +48,9 @@ const MetasScreen = () => {
       } else {
         const novaMeta = {
           ...metaData,
-          valorAtual: 0,
-          finalizada: false,
+          // Mantém o valorAtual fornecido pelo usuário ou usa 0 como padrão
+          valorAtual: metaData.valorAtual || 0,
+          finalizada: metaData.valorAtual >= metaData.valorMeta,
         };
         await adicionarMeta(novaMeta);
         successToast('Meta criada com sucesso!');

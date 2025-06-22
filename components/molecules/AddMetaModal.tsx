@@ -300,6 +300,7 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
           <View className="flex-row flex-wrap gap-3">
             {tiposMeta.map((tipo) => (
               <TouchableOpacity
+                testID={`tipo-selector-${tipo.value}`}
                 key={tipo.value}
                 onPress={() => setFormData({
                   ...formData, 
@@ -336,6 +337,7 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
               Valor da Meta *
             </Text>
             <TextInput
+              testID="input-valor-meta"
               className={`border rounded-xl p-4 text-base ${
                 isDark 
                   ? 'bg-gray-800 border-gray-600 text-white' 
@@ -355,6 +357,7 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
               Valor Atual
             </Text>
             <TextInput
+              testID="input-valor-atual"
               className={`border rounded-xl p-4 text-base ${
                 isDark 
                   ? 'bg-gray-800 border-gray-600 text-white' 
@@ -402,6 +405,7 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
           <View className="flex-row flex-wrap gap-3">
             {coresDisponiveis.map((cor) => (
               <TouchableOpacity
+                testID={`color-selector-${cor}`} 
                 key={cor}
                 onPress={() => setFormData({...formData, cor})}
                 className={`
@@ -428,6 +432,7 @@ const AddMetaModal: React.FC<AddMetaModalProps> = ({
           <View className="flex-row flex-wrap gap-2">
             {iconesDisponiveis.map((icone) => (
               <TouchableOpacity
+                testID={`icone-selector-${icone}`} 
                 key={icone}
                 onPress={() => setFormData({...formData, icone})}
                 className={`
